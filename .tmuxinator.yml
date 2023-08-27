@@ -1,0 +1,17 @@
+# ./.tmuxinator.yml
+
+name: argon
+root: .
+
+windows:
+    - nvim:
+          - clear
+          - nvim .
+    - run:
+          - clear
+    - tauri backend:
+          - cd src-tauri/
+          - clear
+    - git:
+          - clear
+          - gs
