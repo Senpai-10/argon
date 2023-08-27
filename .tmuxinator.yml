@@ -13,6 +13,9 @@ windows:
     - Desktop client backend:
           - cd desktop/src-tauri/
           - clear
+    - Server:
+          - cd server
+          - clear
     - Git:
           - clear
           - gs
