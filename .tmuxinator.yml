@@ -8,7 +8,7 @@ windows:
           - clear
           - nvim .
     - Desktop client:
-          - cd desktop/src-tauri/
+          - cd desktop/
           - clear
     - Desktop client backend:
           - cd desktop/src-tauri/
