@@ -4,14 +4,15 @@ name: argon
 root: .
 
 windows:
-    - nvim:
+    - Nvim:
           - clear
           - nvim .
-    - run:
+    - Desktop client:
+          - cd desktop/src-tauri/
           - clear
-    - tauri backend:
-          - cd src-tauri/
+    - Desktop client backend:
+          - cd desktop/src-tauri/
           - clear
-    - git:
+    - Git:
           - clear
           - gs
