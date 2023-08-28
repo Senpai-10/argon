@@ -7,8 +7,9 @@ windows:
     - Nvim:
           - clear
           - nvim .
+    - Server Run:
+          - clear
     - Server:
-          - cd server
           - clear
     - Git:
           - clear
