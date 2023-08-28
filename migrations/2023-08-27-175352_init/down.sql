@@ -3,4 +3,5 @@
 DROP TABLE albums;
 DROP TABLE artists;
 DROP TABLE songs;
+DROP TABLE features;
 
