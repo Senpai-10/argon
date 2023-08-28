@@ -29,3 +29,16 @@ CREATE TABLE songs (
         ON DELETE CASCADE
 );
 
+CREATE TABLE features (
+    id TEXT NOT NULL PRIMARY KEY,
+    artist_name TEXT NOT NULL,
+    song_id TEXT NOT NULL,
+
+    FOREIGN KEY (artist_name)
+        REFERENCES artists(name)
+        ON DELETE CASCADE
+
+    FOREIGN KEY (song_id)
+        REFERENCES songs(id)
+        ON DELETE CASCADE
+);
