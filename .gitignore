@@ -1,4 +1,3 @@
-node_modules
-dist
+.env
 target
-server/dev.db
+dev.db
