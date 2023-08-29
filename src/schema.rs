@@ -33,9 +33,9 @@ diesel::table! {
         id -> Int4,
         scan_start -> Timestamp,
         scan_end -> Timestamp,
-        tracks -> Int4,
         artists -> Int4,
         albums -> Int4,
+        tracks -> Int4,
     }
 }
 
@@ -43,8 +43,8 @@ diesel::table! {
     tracks (id) {
         id -> Text,
         title -> Text,
-        artist_name -> Text,
-        album_id -> Text,
+        artist_name -> Nullable<Text>,
+        album_id -> Nullable<Text>,
         duration -> Int4,
         year -> Nullable<Int4>,
         track_number -> Nullable<Int4>,
