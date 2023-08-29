@@ -17,8 +17,8 @@ CREATE TABLE albums (
 CREATE TABLE tracks (
     id                      TEXT PRIMARY KEY,
     title                   TEXT NOT NULL,
-    artist_name             TEXT NOT NULL REFERENCES artists(name) ON DELETE CASCADE,
-    album_id                TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
+    artist_name             TEXT REFERENCES artists(name) ON DELETE CASCADE,
+    album_id                TEXT REFERENCES albums(id) ON DELETE CASCADE,
     duration                INT NOT NULL,
     year                    INT,
     track_number            INT,
@@ -44,6 +44,6 @@ CREATE TABLE scan_info (
     scan_start              TIMESTAMP NOT NULL,
     scan_end                TIMESTAMP NOT NULL,
     artists                 INT NOT NULL,
-    albums                  INT NOT NULL
-    tracks                  INT NOT NULL,
+    albums                  INT NOT NULL,
+    tracks                  INT NOT NULL
 );
