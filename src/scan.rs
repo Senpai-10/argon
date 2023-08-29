@@ -3,7 +3,7 @@ use crate::models::artists::NewArtist;
 use crate::models::features::NewFeature;
 use crate::models::scan_info::NewScanInfo;
 use crate::models::tracks::NewTrack;
-use crate::{db, schema};
+use crate::schema;
 use chrono::Utc;
 use diesel::dsl::{exists, select};
 use diesel::pg::PgConnection;
@@ -14,6 +14,16 @@ use nanoid::nanoid;
 use std::env;
 use std::path::PathBuf;
 use walkdir::WalkDir;
+
+/// check if this is the first time the program starts
+pub fn is_first_run(conn: &mut PgConnection) -> bool {
+    let count = schema::scan_info::dsl::scan_info
+        .count()
+        .get_result::<i64>(conn)
+        .unwrap_or(0);
+
+    count == 0
+}
 
 fn track_exists(conn: &mut PgConnection, id: &String) -> bool {
     select(exists(
@@ -51,7 +61,7 @@ fn feature_exists(conn: &mut PgConnection, artist_name: String, track_id: String
     .unwrap()
 }
 
-pub fn scan() {
+pub fn scan(conn: &mut PgConnection) {
     let music_dir: PathBuf = match env::var("ARGON_MUSIC_LIB") {
         Ok(v) => v.into(),
         Err(_) => {
@@ -65,8 +75,6 @@ pub fn scan() {
         error!("Music dir not found! {}", music_dir.display());
         return;
     }
-
-    let mut conn = db::establish_connection();
 
     let mut artists_counter: i32 = 0;
     let mut albums_counter: i32 = 0;
@@ -83,7 +91,7 @@ pub fn scan() {
 
         let id = sha256::try_digest(file_path).unwrap();
 
-        if track_exists(&mut conn, &id) {
+        if track_exists(conn, &id) {
             continue;
         }
 
@@ -117,7 +125,7 @@ pub fn scan() {
             for (index, artist) in artists.into_iter().enumerate() {
                 artists_counter += 1;
                 // create artist if does not exists
-                if !artist_exists(&mut conn, artist.to_string()) {
+                if !artist_exists(conn, artist.to_string()) {
                     let new_artist = NewArtist {
                         name: artist.to_string(),
                         created_at: date,
@@ -126,7 +134,7 @@ pub fn scan() {
 
                     match diesel::insert_into(schema::artists::dsl::artists)
                         .values(new_artist)
-                        .execute(&mut conn)
+                        .execute(conn)
                     {
                         Ok(_) => {
                             info!("Added new artist '{}' to database", &artist);
@@ -142,7 +150,7 @@ pub fn scan() {
                     continue;
                 }
 
-                if !feature_exists(&mut conn, artist.to_string(), new_track.id.clone()) {
+                if !feature_exists(conn, artist.to_string(), new_track.id.clone()) {
                     let new_feature = NewFeature {
                         id: nanoid!(),
                         artist_name: artist.to_string(),
@@ -157,7 +165,7 @@ pub fn scan() {
 
             if let Some(album) = tag.album() {
                 if !album_exists(
-                    &mut conn,
+                    conn,
                     album.to_string(),
                     new_track.artist_name.clone().unwrap(),
                 ) {
@@ -172,7 +180,7 @@ pub fn scan() {
 
                     match diesel::insert_into(schema::albums::dsl::albums)
                         .values(&new_album)
-                        .execute(&mut conn)
+                        .execute(conn)
                     {
                         Ok(_) => {
                             info!(
@@ -202,7 +210,7 @@ pub fn scan() {
 
         match diesel::insert_into(schema::tracks::dsl::tracks)
             .values(&new_track)
-            .execute(&mut conn)
+            .execute(conn)
         {
             Ok(_) => {
                 info!(
@@ -219,7 +227,7 @@ pub fn scan() {
         if !features_insert_queue.is_empty() {
             match diesel::insert_into(schema::features::dsl::features)
                 .values(&features_insert_queue)
-                .execute(&mut conn)
+                .execute(conn)
             {
                 Ok(_) => {
                     info!(
@@ -245,23 +253,21 @@ pub fn scan() {
         tracks: tracks_counter,
     };
 
-    if new_scan_info.tracks != 0 {
-        match diesel::insert_into(schema::scan_info::dsl::scan_info)
-            .values(&new_scan_info)
-            .execute(&mut conn)
-        {
-            Ok(_) => {
-                info!(
-                    "Scan Done({}s), Found {} artist, {} album, {} track",
-                    new_scan_info.artists,
-                    new_scan_info.albums,
-                    new_scan_info.tracks,
-                    (scan_end - scan_start).num_seconds()
-                )
-            }
-            Err(e) => {
-                error!("Failed to add scan info to database!, {e}")
-            }
-        };
-    }
+    match diesel::insert_into(schema::scan_info::dsl::scan_info)
+        .values(&new_scan_info)
+        .execute(conn)
+    {
+        Ok(_) => {
+            info!(
+                "Scan Done({}s), Found {} artist, {} album, {} track",
+                (scan_end - scan_start).num_seconds(),
+                new_scan_info.artists,
+                new_scan_info.albums,
+                new_scan_info.tracks,
+            )
+        }
+        Err(e) => {
+            error!("Failed to add scan info to database!, {e}")
+        }
+    };
 }

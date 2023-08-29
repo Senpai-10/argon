@@ -6,7 +6,7 @@ mod models;
 mod scan;
 mod schema;
 
-use scan::scan;
+use scan::{is_first_run, scan};
 
 #[get("/")]
 fn index() -> &'static str {
@@ -19,7 +19,13 @@ fn rocket() -> _ {
         .filter(None, log::LevelFilter::Info)
         .init();
 
-    scan();
+    {
+        let mut conn = db::establish_connection();
+
+        if is_first_run(&mut conn) {
+            scan(&mut conn);
+        }
+    }
 
     rocket::build().mount("/", routes![index])
 }
