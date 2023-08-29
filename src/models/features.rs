@@ -1,5 +1,3 @@
-use crate::models::artists::Artist;
-use crate::models::tracks::Track;
 use crate::schema;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
