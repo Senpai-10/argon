@@ -1,14 +1,20 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    albums (title) {
+    albums (id) {
+        id -> Text,
         title -> Text,
+        artist_name -> Text,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
 diesel::table! {
     artists (name) {
         name -> Text,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -16,31 +22,50 @@ diesel::table! {
     features (id) {
         id -> Text,
         artist_name -> Text,
-        song_id -> Text,
+        track_id -> Text,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
 diesel::table! {
-    songs (id) {
-        id -> Text,
-        title -> Text,
-        artist_name -> Text,
-        album_title -> Text,
-        length -> Integer,
-        year -> Nullable<Integer>,
-        track -> Nullable<Integer>,
-        path -> Text,
+    scan_info (id) {
+        id -> Int4,
+        scan_start -> Timestamp,
+        scan_end -> Timestamp,
+        tracks -> Int4,
+        artists -> Int4,
+        albums -> Int4,
     }
 }
 
+diesel::table! {
+    tracks (id) {
+        id -> Text,
+        title -> Text,
+        artist_name -> Text,
+        album_id -> Text,
+        duration -> Int4,
+        year -> Nullable<Int4>,
+        track_number -> Nullable<Int4>,
+        last_play -> Nullable<Timestamp>,
+        plays -> Int4,
+        path -> Text,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
+    }
+}
+
+diesel::joinable!(albums -> artists (artist_name));
 diesel::joinable!(features -> artists (artist_name));
-diesel::joinable!(features -> songs (song_id));
-diesel::joinable!(songs -> albums (album_title));
-diesel::joinable!(songs -> artists (artist_name));
+diesel::joinable!(features -> tracks (track_id));
+diesel::joinable!(tracks -> albums (album_id));
+diesel::joinable!(tracks -> artists (artist_name));
 
 diesel::allow_tables_to_appear_in_same_query!(
     albums,
     artists,
     features,
-    songs,
+    scan_info,
+    tracks,
 );

@@ -1,44 +1,49 @@
 -- Your SQL goes here
 
-CREATE TABLE albums (
-    title TEXT NOT NULL PRIMARY KEY
-);
-
 CREATE TABLE artists (
-    name TEXT NOT NULL PRIMARY KEY
+    name                    TEXT PRIMARY KEY,
+    created_at              TIMESTAMP NOT NULL,
+    updated_at              TIMESTAMP
 );
 
-CREATE TABLE songs (
-    id TEXT NOT NULL PRIMARY KEY,
-    title TEXT NOT NULL,
-    artist_name TEXT NOT NULL,
-    album_title TEXT NOT NULL,
-    length INT NOT NULL,
-    --genre TEXT NOT NULL,
-    year INT,
-    track INT,
-    -- Path to file
-    path TEXT NOT NULL,
+CREATE TABLE albums (
+    id                      TEXT PRIMARY KEY,
+    title                   TEXT NOT NULL,
+    artist_name             TEXT NOT NULL REFERENCES artists(name) ON DELETE CASCADE,
+    created_at              TIMESTAMP NOT NULL,
+    updated_at              TIMESTAMP
+);
 
-    FOREIGN KEY (album_title)
-        REFERENCES albums(title)
-        ON DELETE CASCADE
+CREATE TABLE tracks (
+    id                      TEXT PRIMARY KEY,
+    title                   TEXT NOT NULL,
+    artist_name             TEXT NOT NULL REFERENCES artists(name) ON DELETE CASCADE,
+    album_id                TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
+    duration                INT NOT NULL,
+    year                    INT,
+    track_number            INT,
+    last_play               TIMESTAMP,
+    plays                   INT NOT NULL,
+    path                    TEXT NOT NULL,
 
-    FOREIGN KEY (artist_name)
-        REFERENCES artists(name)
-        ON DELETE CASCADE
+    created_at              TIMESTAMP NOT NULL,
+    updated_at              TIMESTAMP
 );
 
 CREATE TABLE features (
-    id TEXT NOT NULL PRIMARY KEY,
-    artist_name TEXT NOT NULL,
-    song_id TEXT NOT NULL,
+    id                      TEXT PRIMARY KEY,
+    artist_name             TEXT NOT NULL REFERENCES artists(name) ON DELETE CASCADE,
+    track_id                TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
 
-    FOREIGN KEY (artist_name)
-        REFERENCES artists(name)
-        ON DELETE CASCADE
+    created_at              TIMESTAMP NOT NULL,
+    updated_at              TIMESTAMP
+);
 
-    FOREIGN KEY (song_id)
-        REFERENCES songs(id)
-        ON DELETE CASCADE
+CREATE TABLE scan_info (
+    id                      SERIAL PRIMARY KEY,
+    scan_start              TIMESTAMP NOT NULL,
+    scan_end                TIMESTAMP NOT NULL,
+    artists                 INT NOT NULL,
+    albums                  INT NOT NULL
+    tracks                  INT NOT NULL,
 );

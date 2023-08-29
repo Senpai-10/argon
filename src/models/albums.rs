@@ -1,15 +1,26 @@
 use crate::schema;
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = schema::albums)]
+#[diesel(belongs_to(Artist, foreign_key = artist_name))]
 pub struct Album {
+    pub id: String,
     pub title: String,
+    pub artist_name: String,
+    pub created_at: NaiveDateTime,
+    pub updated_at: Option<NaiveDateTime>,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
 #[diesel(table_name = schema::albums)]
+#[diesel(belongs_to(Artist, foreign_key = artist_name))]
 pub struct NewAlbum {
+    pub id: String,
     pub title: String,
+    pub artist_name: String,
+    pub created_at: NaiveDateTime,
+    pub updated_at: Option<NaiveDateTime>,
 }

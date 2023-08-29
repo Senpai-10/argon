@@ -1,4 +1,5 @@
 pub mod albums;
 pub mod artists;
 pub mod features;
-pub mod songs;
+pub mod scan_info;
+pub mod tracks;
