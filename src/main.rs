@@ -3,15 +3,11 @@ extern crate rocket;
 
 mod db;
 mod models;
+mod routes;
 mod scan;
 mod schema;
 
 use scan::{is_first_run, scan};
-
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
-}
 
 #[launch]
 fn rocket() -> _ {
@@ -27,5 +23,8 @@ fn rocket() -> _ {
         }
     }
 
-    rocket::build().mount("/", routes![index])
+    rocket::build().mount(
+        "/api/",
+        routes![routes::tracks::tracks, routes::tracks::tracks_feed],
+    )
 }
