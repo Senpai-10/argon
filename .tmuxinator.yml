@@ -11,6 +11,8 @@ windows:
           - clear
     - Server:
           - clear
+    - Clippy:
+          - bacon -j clippy
     - Git:
           - clear
           - gs
