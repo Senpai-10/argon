@@ -7,10 +7,13 @@ mod routes;
 mod scan;
 mod schema;
 
+use dotenvy::dotenv;
 use scan::{is_first_run, scan};
 
 #[launch]
 fn rocket() -> _ {
+    dotenv().ok();
+
     env_logger::builder()
         .filter(None, log::LevelFilter::Info)
         .init();
