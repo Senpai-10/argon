@@ -76,9 +76,9 @@ pub fn scan(conn: &mut PgConnection) {
         return;
     }
 
-    let mut artists_counter: i32 = 0;
-    let mut albums_counter: i32 = 0;
-    let mut tracks_counter: i32 = 0;
+    let mut new_artists_counter: i32 = 0;
+    let mut new_albums_counter: i32 = 0;
+    let mut new_tracks_counter: i32 = 0;
 
     let scan_start = Utc::now().naive_utc();
 
@@ -115,7 +115,7 @@ pub fn scan(conn: &mut PgConnection) {
             updated_at: None,
         };
 
-        tracks_counter += 1;
+        new_tracks_counter += 1;
 
         let tag = id3::Tag::read_from_path(file_path).unwrap();
 
@@ -125,9 +125,9 @@ pub fn scan(conn: &mut PgConnection) {
 
         if let Some(artists) = tag.artists() {
             for (index, artist) in artists.into_iter().enumerate() {
-                artists_counter += 1;
                 let artist_name_hash = sha256::digest(artist);
-                // create artist if does not exists
+
+                // Create artist if does not exists
                 if !artist_exists(conn, &artist_name_hash) {
                     let new_artist = NewArtist {
                         id: artist_name_hash.clone(),
@@ -142,11 +142,12 @@ pub fn scan(conn: &mut PgConnection) {
                     {
                         Ok(_) => {
                             info!("Added new artist '{}' to database", &artist);
+                            new_artists_counter += 1;
                         }
                         Err(e) => {
                             error!("Failed to add artist to database!, {e}");
                         }
-                    }
+                    };
                 }
 
                 if index == 0 {
@@ -180,7 +181,6 @@ pub fn scan(conn: &mut PgConnection) {
                         created_at: date,
                         updated_at: None,
                     };
-                    albums_counter += 1;
 
                     match diesel::insert_into(schema::albums::dsl::albums)
                         .values(&new_album)
@@ -188,6 +188,7 @@ pub fn scan(conn: &mut PgConnection) {
                     {
                         Ok(_) => {
                             info!("Added new album '{}' to database", new_album.title);
+                            new_albums_counter += 1;
                         }
                         Err(e) => {
                             error!("Failed to add album to database!, {e}");
@@ -252,9 +253,9 @@ pub fn scan(conn: &mut PgConnection) {
     let new_scan_info = NewScanInfo {
         scan_start,
         scan_end,
-        artists: artists_counter,
-        albums: albums_counter,
-        tracks: tracks_counter,
+        artists: new_artists_counter,
+        albums: new_albums_counter,
+        tracks: new_tracks_counter,
     };
 
     if new_scan_info.tracks != 0 {
