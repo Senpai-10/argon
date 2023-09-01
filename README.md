@@ -4,4 +4,5 @@ Music server
 
 # Api
 
-TODO!
+`/tracks` - get all tracks
+`/tracks/feed?offset=int&limit=int` - tracks in pages
