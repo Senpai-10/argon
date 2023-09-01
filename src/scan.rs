@@ -33,28 +33,28 @@ fn track_exists(conn: &mut PgConnection, id: &String) -> bool {
     .unwrap()
 }
 
-fn album_exists(conn: &mut PgConnection, title: String, artist: String) -> bool {
+fn album_exists(conn: &mut PgConnection, title: &String, artist_id: &String) -> bool {
     select(exists(
         schema::albums::dsl::albums
             .filter(schema::albums::dsl::title.eq(title))
-            .filter(schema::albums::dsl::artist_name.eq(artist)),
+            .filter(schema::albums::dsl::artist_id.eq(artist_id)),
     ))
     .get_result::<bool>(conn)
     .unwrap()
 }
 
-fn artist_exists(conn: &mut PgConnection, name: String) -> bool {
+fn artist_exists(conn: &mut PgConnection, id: &String) -> bool {
     select(exists(
-        schema::artists::dsl::artists.filter(schema::artists::dsl::name.eq(name)),
+        schema::artists::dsl::artists.filter(schema::artists::dsl::id.eq(id)),
     ))
     .get_result::<bool>(conn)
     .unwrap()
 }
 
-fn feature_exists(conn: &mut PgConnection, artist_name: String, track_id: String) -> bool {
+fn feature_exists(conn: &mut PgConnection, artist_id: String, track_id: String) -> bool {
     select(exists(
         schema::features::dsl::features
-            .filter(schema::features::dsl::artist_name.eq(artist_name))
+            .filter(schema::features::dsl::artist_id.eq(artist_id))
             .filter(schema::features::dsl::track_id.eq(track_id)),
     ))
     .get_result::<bool>(conn)
@@ -101,7 +101,7 @@ pub fn scan(conn: &mut PgConnection) {
         let mut new_track = NewTrack {
             id,
             title: "Untitled".to_string(),
-            artist_name: None,
+            artist_id: None,
             album_id: None,
             duration: 0,
             year: None,
@@ -124,9 +124,11 @@ pub fn scan(conn: &mut PgConnection) {
         if let Some(artists) = tag.artists() {
             for (index, artist) in artists.into_iter().enumerate() {
                 artists_counter += 1;
+                let artist_name_hash = sha256::digest(artist);
                 // create artist if does not exists
-                if !artist_exists(conn, artist.to_string()) {
+                if !artist_exists(conn, &artist_name_hash) {
                     let new_artist = NewArtist {
+                        id: artist_name_hash.clone(),
                         name: artist.to_string(),
                         created_at: date,
                         updated_at: None,
@@ -146,14 +148,14 @@ pub fn scan(conn: &mut PgConnection) {
                 }
 
                 if index == 0 {
-                    new_track.artist_name = Some(artist.to_string());
+                    new_track.artist_id = Some(artist_name_hash);
                     continue;
                 }
 
                 if !feature_exists(conn, artist.to_string(), new_track.id.clone()) {
                     let new_feature = NewFeature {
                         id: nanoid!(),
-                        artist_name: artist.to_string(),
+                        artist_id: artist_name_hash.clone(),
                         track_id: new_track.id.clone(),
                         created_at: date,
                         updated_at: None,
@@ -166,13 +168,13 @@ pub fn scan(conn: &mut PgConnection) {
             if let Some(album) = tag.album() {
                 if !album_exists(
                     conn,
-                    album.to_string(),
-                    new_track.artist_name.clone().unwrap(),
+                    &album.to_string(),
+                    &new_track.artist_id.clone().unwrap(),
                 ) {
                     let new_album = NewAlbum {
                         id: nanoid!(),
                         title: album.to_string(),
-                        artist_name: new_track.artist_name.clone().unwrap(),
+                        artist_id: new_track.artist_id.clone().unwrap(),
                         created_at: date,
                         updated_at: None,
                     };
@@ -183,10 +185,7 @@ pub fn scan(conn: &mut PgConnection) {
                         .execute(conn)
                     {
                         Ok(_) => {
-                            info!(
-                                "Added new album '{}' by '{}' to database",
-                                new_album.title, new_album.artist_name
-                            );
+                            info!("Added new album '{}' to database", new_album.title);
                         }
                         Err(e) => {
                             error!("Failed to add album to database!, {e}");
@@ -214,9 +213,12 @@ pub fn scan(conn: &mut PgConnection) {
         {
             Ok(_) => {
                 info!(
-                    "Added new track '{}' by '{}' to database",
-                    new_track.title,
-                    new_track.artist_name.clone().unwrap()
+                    "Added new track '{}' to database",
+                    if new_track.title == "Untitled" {
+                        &new_track.path
+                    } else {
+                        &new_track.title
+                    }
                 );
             }
             Err(e) => {

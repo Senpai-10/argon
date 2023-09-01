@@ -4,14 +4,15 @@ diesel::table! {
     albums (id) {
         id -> Text,
         title -> Text,
-        artist_name -> Text,
+        artist_id -> Text,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
     }
 }
 
 diesel::table! {
-    artists (name) {
+    artists (id) {
+        id -> Text,
         name -> Text,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
@@ -21,7 +22,7 @@ diesel::table! {
 diesel::table! {
     features (id) {
         id -> Text,
-        artist_name -> Text,
+        artist_id -> Text,
         track_id -> Text,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
@@ -43,7 +44,7 @@ diesel::table! {
     tracks (id) {
         id -> Text,
         title -> Text,
-        artist_name -> Nullable<Text>,
+        artist_id -> Nullable<Text>,
         album_id -> Nullable<Text>,
         duration -> Int4,
         year -> Nullable<Int4>,
@@ -56,11 +57,11 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(albums -> artists (artist_name));
-diesel::joinable!(features -> artists (artist_name));
+diesel::joinable!(albums -> artists (artist_id));
+diesel::joinable!(features -> artists (artist_id));
 diesel::joinable!(features -> tracks (track_id));
 diesel::joinable!(tracks -> albums (album_id));
-diesel::joinable!(tracks -> artists (artist_name));
+diesel::joinable!(tracks -> artists (artist_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     albums,

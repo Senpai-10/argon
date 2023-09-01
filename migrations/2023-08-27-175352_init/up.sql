@@ -1,7 +1,8 @@
 -- Your SQL goes here
 
 CREATE TABLE artists (
-    name                    TEXT PRIMARY KEY,
+    id                      TEXT PRIMARY KEY, -- Artist name hashed with sha256
+    name                    TEXT NOT NULL,
     created_at              TIMESTAMP NOT NULL,
     updated_at              TIMESTAMP
 );
@@ -9,7 +10,7 @@ CREATE TABLE artists (
 CREATE TABLE albums (
     id                      TEXT PRIMARY KEY,
     title                   TEXT NOT NULL,
-    artist_name             TEXT NOT NULL REFERENCES artists(name) ON DELETE CASCADE,
+    artist_id               TEXT NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
     created_at              TIMESTAMP NOT NULL,
     updated_at              TIMESTAMP
 );
@@ -17,7 +18,7 @@ CREATE TABLE albums (
 CREATE TABLE tracks (
     id                      TEXT PRIMARY KEY,
     title                   TEXT NOT NULL,
-    artist_name             TEXT REFERENCES artists(name) ON DELETE CASCADE,
+    artist_id               TEXT REFERENCES artists(id) ON DELETE CASCADE,
     album_id                TEXT REFERENCES albums(id) ON DELETE CASCADE,
     duration                INT NOT NULL,
     year                    INT,
@@ -32,7 +33,7 @@ CREATE TABLE tracks (
 
 CREATE TABLE features (
     id                      TEXT PRIMARY KEY,
-    artist_name             TEXT NOT NULL REFERENCES artists(name) ON DELETE CASCADE,
+    artist_id               TEXT NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
     track_id                TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
 
     created_at              TIMESTAMP NOT NULL,

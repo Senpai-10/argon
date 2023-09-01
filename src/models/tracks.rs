@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Queryable, Selectable, Debug, Serialize, Deserialize)]
 #[diesel(table_name = schema::tracks)]
-#[diesel(belongs_to(Artist, foreign_key = artist_name))]
+#[diesel(belongs_to(Artist, foreign_key = artist_id))]
 #[diesel(belongs_to(Album, foreign_key = album_id))]
 pub struct Track {
     pub id: String,
     pub title: String,
-    pub artist_name: Option<String>,
+    pub artist_id: Option<String>,
     pub album_id: Option<String>,
     pub duration: i32,
     pub year: Option<i32>,
@@ -24,12 +24,12 @@ pub struct Track {
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = schema::tracks)]
-#[diesel(belongs_to(Artist, foreign_key = artist_name))]
+#[diesel(belongs_to(Artist, foreign_key = artist_id))]
 #[diesel(belongs_to(Album, foreign_key = album_id))]
 pub struct NewTrack {
     pub id: String,
     pub title: String,
-    pub artist_name: Option<String>,
+    pub artist_id: Option<String>,
     pub album_id: Option<String>,
     pub duration: i32,
     pub year: Option<i32>,
