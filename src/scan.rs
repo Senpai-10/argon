@@ -1,7 +1,7 @@
 use crate::models::albums::NewAlbum;
 use crate::models::artists::NewArtist;
 use crate::models::features::NewFeature;
-use crate::models::scan_info::NewScanInfo;
+use crate::models::scan_info::{NewScanInfo, ScanInfo};
 use crate::models::tracks::NewTrack;
 use crate::schema;
 use chrono::Utc;
@@ -61,7 +61,7 @@ fn feature_exists(conn: &mut PgConnection, artist_id: String, track_id: String) 
     .unwrap()
 }
 
-pub fn scan(conn: &mut PgConnection) {
+pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
     let music_dir: PathBuf = match env::var("ARGON_MUSIC_LIB") {
         Ok(v) => v.into(),
         Err(_) => {
@@ -73,7 +73,7 @@ pub fn scan(conn: &mut PgConnection) {
 
     if !music_dir.exists() {
         error!("Music dir not found! {}", music_dir.display());
-        return;
+        return None;
     }
 
     let mut new_artists_counter: i32 = 0;
@@ -258,20 +258,6 @@ pub fn scan(conn: &mut PgConnection) {
         tracks: new_tracks_counter,
     };
 
-    if new_scan_info.tracks != 0 {
-        match diesel::insert_into(schema::scan_info::dsl::scan_info)
-            .values(&new_scan_info)
-            .execute(conn)
-        {
-            Ok(_) => {
-                info!("Scan info saved!");
-            }
-            Err(e) => {
-                error!("Failed to add scan info to database!, {e}")
-            }
-        };
-    }
-
     info!(
         "Scan Done({}s), Found {} artist, {} album, {} track",
         (scan_end - scan_start).num_seconds(),
@@ -279,4 +265,20 @@ pub fn scan(conn: &mut PgConnection) {
         new_scan_info.albums,
         new_scan_info.tracks,
     );
+
+    match diesel::insert_into(schema::scan_info::dsl::scan_info)
+        .values(&new_scan_info)
+        .get_result::<ScanInfo>(conn)
+    {
+        Ok(si) => {
+            info!("Scan info saved!");
+
+            return Some(si);
+        }
+        Err(e) => {
+            error!("Failed to add scan info to database!, {e}")
+        }
+    };
+
+    None
 }
