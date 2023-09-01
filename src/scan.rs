@@ -82,6 +82,8 @@ pub fn scan(conn: &mut PgConnection) {
 
     let scan_start = Utc::now().naive_utc();
 
+    info!("Scanning Music library! '{}'", music_dir.display());
+
     for entry in WalkDir::new(music_dir).into_iter().flatten() {
         let file_path = entry.path();
 
@@ -255,21 +257,25 @@ pub fn scan(conn: &mut PgConnection) {
         tracks: tracks_counter,
     };
 
-    match diesel::insert_into(schema::scan_info::dsl::scan_info)
-        .values(&new_scan_info)
-        .execute(conn)
-    {
-        Ok(_) => {
-            info!(
-                "Scan Done({}s), Found {} artist, {} album, {} track",
-                (scan_end - scan_start).num_seconds(),
-                new_scan_info.artists,
-                new_scan_info.albums,
-                new_scan_info.tracks,
-            )
-        }
-        Err(e) => {
-            error!("Failed to add scan info to database!, {e}")
-        }
-    };
+    if new_scan_info.tracks != 0 {
+        match diesel::insert_into(schema::scan_info::dsl::scan_info)
+            .values(&new_scan_info)
+            .execute(conn)
+        {
+            Ok(_) => {
+                info!("Scan info saved!");
+            }
+            Err(e) => {
+                error!("Failed to add scan info to database!, {e}")
+            }
+        };
+    }
+
+    info!(
+        "Scan Done({}s), Found {} artist, {} album, {} track",
+        (scan_end - scan_start).num_seconds(),
+        new_scan_info.artists,
+        new_scan_info.albums,
+        new_scan_info.tracks,
+    );
 }
