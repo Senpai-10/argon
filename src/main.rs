@@ -28,6 +28,10 @@ fn rocket() -> _ {
 
     rocket::build().mount(
         "/api/",
-        routes![routes::tracks::tracks, routes::tracks::tracks_feed],
+        routes![
+            routes::tracks::tracks,
+            routes::tracks::tracks_feed,
+            routes::stats::stats
+        ],
     )
 }
