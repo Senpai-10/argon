@@ -31,6 +31,7 @@ fn rocket() -> _ {
         routes![
             routes::tracks::tracks,
             routes::tracks::track,
+            routes::tracks::track_cover,
             routes::stats::stats,
             routes::scan::scan_route,
         ],
