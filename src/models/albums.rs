@@ -11,7 +11,7 @@ pub struct Album {
     pub title: String,
     pub artist_id: String,
     pub created_at: NaiveDateTime,
-    pub updated_at: Option<NaiveDateTime>,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
@@ -21,6 +21,4 @@ pub struct NewAlbum {
     pub id: String,
     pub title: String,
     pub artist_id: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: Option<NaiveDateTime>,
 }

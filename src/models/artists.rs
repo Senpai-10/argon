@@ -9,7 +9,7 @@ pub struct Artist {
     pub id: String,
     pub name: String,
     pub created_at: NaiveDateTime,
-    pub updated_at: Option<NaiveDateTime>,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
@@ -17,6 +17,4 @@ pub struct Artist {
 pub struct NewArtist {
     pub id: String,
     pub name: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: Option<NaiveDateTime>,
 }

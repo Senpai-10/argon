@@ -6,7 +6,7 @@ diesel::table! {
         title -> Text,
         artist_id -> Text,
         created_at -> Timestamp,
-        updated_at -> Nullable<Timestamp>,
+        updated_at -> Timestamp,
     }
 }
 
@@ -15,7 +15,7 @@ diesel::table! {
         id -> Text,
         name -> Text,
         created_at -> Timestamp,
-        updated_at -> Nullable<Timestamp>,
+        updated_at -> Timestamp,
     }
 }
 
@@ -34,7 +34,7 @@ diesel::table! {
         artist_id -> Text,
         track_id -> Text,
         created_at -> Timestamp,
-        updated_at -> Nullable<Timestamp>,
+        updated_at -> Timestamp,
     }
 }
 
@@ -62,7 +62,7 @@ diesel::table! {
         plays -> Int4,
         path -> Text,
         created_at -> Timestamp,
-        updated_at -> Nullable<Timestamp>,
+        updated_at -> Timestamp,
     }
 }
 

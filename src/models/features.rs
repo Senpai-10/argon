@@ -12,7 +12,7 @@ pub struct Feature {
     pub artist_id: String,
     pub track_id: String,
     pub created_at: NaiveDateTime,
-    pub updated_at: Option<NaiveDateTime>,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
@@ -23,6 +23,4 @@ pub struct NewFeature {
     pub id: String,
     pub artist_id: String,
     pub track_id: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: Option<NaiveDateTime>,
 }

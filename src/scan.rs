@@ -98,7 +98,6 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
         }
 
         let mut features_insert_queue: Vec<NewFeature> = Vec::new();
-        let date = Utc::now().naive_utc();
 
         let mut new_track = NewTrack {
             id,
@@ -111,8 +110,6 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
             last_play: None,
             plays: 0,
             path: file_path.to_str().unwrap().to_string(),
-            created_at: date,
-            updated_at: None,
         };
 
         new_tracks_counter += 1;
@@ -132,8 +129,6 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
                     let new_artist = NewArtist {
                         id: artist_name_hash.clone(),
                         name: artist.to_string(),
-                        created_at: date,
-                        updated_at: None,
                     };
 
                     match diesel::insert_into(schema::artists::dsl::artists)
@@ -160,8 +155,6 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
                         id: nanoid!(),
                         artist_id: artist_name_hash.clone(),
                         track_id: new_track.id.clone(),
-                        created_at: date,
-                        updated_at: None,
                     };
 
                     features_insert_queue.push(new_feature);
@@ -178,8 +171,6 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
                         id: nanoid!(),
                         title: album.to_string(),
                         artist_id: new_track.artist_id.clone().unwrap(),
-                        created_at: date,
-                        updated_at: None,
                     };
 
                     match diesel::insert_into(schema::albums::dsl::albums)

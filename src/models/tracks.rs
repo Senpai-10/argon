@@ -19,7 +19,7 @@ pub struct Track {
     pub plays: i32,
     pub path: String,
     pub created_at: NaiveDateTime,
-    pub updated_at: Option<NaiveDateTime>,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
@@ -37,6 +37,4 @@ pub struct NewTrack {
     pub last_play: Option<NaiveDateTime>,
     pub plays: i32,
     pub path: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: Option<NaiveDateTime>,
 }
