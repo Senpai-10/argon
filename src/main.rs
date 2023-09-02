@@ -33,6 +33,7 @@ fn rocket() -> _ {
             routes::tracks::track,
             routes::tracks::track_stream,
             routes::tracks::track_cover,
+            routes::artists::artists,
             routes::stats::stats,
             routes::scan::scan_route,
         ],

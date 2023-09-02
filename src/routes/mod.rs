@@ -7,6 +7,7 @@ pub enum Response<T> {
     error { msg: String },
 }
 
+pub mod artists;
 pub mod scan;
 pub mod stats;
 pub mod tracks;
