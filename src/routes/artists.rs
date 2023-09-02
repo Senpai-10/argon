@@ -9,16 +9,38 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize)]
 pub struct Data {
     artists: Vec<Artist>,
+    offset: Option<i64>,
+    limit: Option<i64>,
+    total: i64,
 }
 
-#[get("/artists")]
-pub fn artists() -> Json<Response<Data>> {
+#[get("/artists?<offset>&<limit>")]
+pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
     let mut conn = db::establish_connection();
+    let mut query = schema::artists::dsl::artists.into_boxed();
 
-    let artists = match schema::artists::dsl::artists.load::<Artist>(&mut conn) {
+    if let Some(offset) = offset {
+        query = query.offset(offset);
+    }
+
+    if let Some(limit) = limit {
+        query = query.limit(limit);
+    }
+
+    let artists = match query.load::<Artist>(&mut conn) {
         Ok(v) => v,
         Err(e) => return Json(Response::error { msg: e.to_string() }),
     };
 
-    Json(Response::data(Data { artists }))
+    let total = schema::artists::dsl::artists
+        .count()
+        .get_result::<i64>(&mut conn)
+        .unwrap();
+
+    Json(Response::data(Data {
+        artists,
+        offset,
+        limit,
+        total,
+    }))
 }
