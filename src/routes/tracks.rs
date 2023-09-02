@@ -6,6 +6,7 @@ use diesel::prelude::*;
 use id3::frame::PictureType;
 use rocket::response::status::NotFound;
 use rocket::serde::json::Json;
+use rocket_seek_stream::SeekStream;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -66,6 +67,30 @@ pub fn track(id: String) -> Json<Response<TrackData>> {
     };
 
     Json(Response::data(TrackData { track }))
+}
+
+#[get("/tracks/<id>/stream")]
+pub fn track_stream<'a>(id: String) -> Result<SeekStream<'a>, NotFound<String>> {
+    let mut conn = db::establish_connection();
+
+    let track = match schema::tracks::dsl::tracks
+        .filter(schema::tracks::id.eq(&id))
+        .get_result::<Track>(&mut conn)
+    {
+        Ok(v) => v,
+        Err(e) => return Err(NotFound(e.to_string())),
+    };
+
+    let file = Path::new(&track.path);
+
+    if file.exists() {
+        return match SeekStream::from_path(file) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(NotFound(e.to_string())),
+        };
+    }
+
+    Err(NotFound("Track file not found!".into()))
 }
 
 #[get("/tracks/<id>/cover")]
