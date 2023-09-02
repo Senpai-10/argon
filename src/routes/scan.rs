@@ -1,3 +1,4 @@
+use super::Response;
 use crate::db;
 use crate::models::scan_info::ScanInfo;
 use crate::schema;
@@ -9,13 +10,6 @@ use crate::scan::scan;
 use dirs::home_dir;
 use std::path::PathBuf;
 
-#[allow(non_camel_case_types)]
-#[derive(Deserialize, Serialize)]
-pub enum Response<T> {
-    data(T),
-    error { msg: String },
-}
-
 #[derive(Deserialize, Serialize)]
 pub struct Data {
     scan_info: Option<ScanInfo>,
@@ -25,7 +19,8 @@ pub struct Data {
 pub async fn scan_route(clean: Option<bool>) -> Json<Response<Data>> {
     if scan_lock_file_path().exists() {
         return Json(Response::error {
-            msg: "Already scanning".into(),
+            title: "Already scanning".into(),
+            body: None,
         });
     }
 
