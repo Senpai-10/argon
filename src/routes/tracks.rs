@@ -34,12 +34,7 @@ pub fn tracks(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksDa
 
     let tracks = match query.load::<Track>(&mut conn) {
         Ok(v) => v,
-        Err(e) => {
-            return Json(Response::error {
-                title: "Failed to get tracks!".into(),
-                body: Some(e.to_string()),
-            })
-        }
+        Err(e) => return Json(Response::error { msg: e.to_string() }),
     };
 
     let total_tracks = schema::tracks::dsl::tracks
@@ -64,12 +59,7 @@ pub fn track(id: String) -> Json<Response<TrackData>> {
         .get_result::<Track>(&mut conn)
     {
         Ok(v) => v,
-        Err(e) => {
-            return Json(Response::error {
-                title: "Track not found".to_string(),
-                body: Some(e.to_string()),
-            })
-        }
+        Err(e) => return Json(Response::error { msg: e.to_string() }),
     };
 
     Json(Response::data(TrackData { track }))

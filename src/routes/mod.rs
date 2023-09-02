@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize)]
 pub enum Response<T> {
     data(T),
-    error { title: String, body: Option<String> },
+    error { msg: String },
 }
 
 pub mod scan;

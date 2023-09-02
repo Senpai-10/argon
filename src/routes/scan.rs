@@ -19,8 +19,7 @@ pub struct Data {
 pub async fn scan_route(clean: Option<bool>) -> Json<Response<Data>> {
     if scan_lock_file_path().exists() {
         return Json(Response::error {
-            title: "Already scanning".into(),
-            body: None,
+            msg: "Already scanning".into(),
         });
     }
 
