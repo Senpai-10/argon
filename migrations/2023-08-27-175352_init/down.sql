@@ -6,3 +6,5 @@ DROP TABLE tracks CASCADE;
 DROP TABLE features CASCADE;
 DROP TABLE scan_info CASCADE;
 
+DROP FUNCTION update_timestamp_column CASCADE;
+
