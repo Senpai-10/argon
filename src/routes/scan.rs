@@ -21,8 +21,8 @@ pub struct Data {
     scan_info: Option<ScanInfo>,
 }
 
-#[get("/scan?<force>")]
-pub async fn scan_route(force: Option<bool>) -> Json<Response<Data>> {
+#[get("/scan?<clean>")]
+pub async fn scan_route(clean: Option<bool>) -> Json<Response<Data>> {
     if scan_lock_file_path().exists() {
         return Json(Response::error {
             msg: "Already scanning".into(),
@@ -31,10 +31,26 @@ pub async fn scan_route(force: Option<bool>) -> Json<Response<Data>> {
 
     let mut conn = db::establish_connection();
 
-    if force.is_some() {
-        diesel::delete(schema::albums::dsl::albums).execute(&mut conn);
-        diesel::delete(schema::tracks::dsl::tracks).execute(&mut conn);
-        diesel::delete(schema::artists::dsl::artists).execute(&mut conn);
+    if let Some(true) = clean {
+        match diesel::delete(schema::artists::dsl::artists).execute(&mut conn) {
+            Ok(v) => info!("Removed {v} artist!"),
+            Err(e) => error!("Failed to clear artists table! {e}"),
+        };
+
+        match diesel::delete(schema::albums::dsl::albums).execute(&mut conn) {
+            Ok(v) => info!("Removed {v} album!"),
+            Err(e) => error!("Failed to clear albums table! {e}"),
+        };
+
+        match diesel::delete(schema::features::dsl::features).execute(&mut conn) {
+            Ok(v) => info!("Removed {v} feature!"),
+            Err(e) => error!("Failed to clear features table! {e}"),
+        }
+
+        match diesel::delete(schema::tracks::dsl::tracks).execute(&mut conn) {
+            Ok(v) => info!("Removed {v} track!"),
+            Err(e) => error!("Failed to clear tracks table! {e}"),
+        };
     }
 
     scan_lock();
