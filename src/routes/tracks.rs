@@ -23,9 +23,10 @@ pub struct TrackData {
     pub track: Track,
 }
 
-#[get("/tracks?<artist>&<offset>&<limit>")]
+#[get("/tracks?<artist>&<album>&<offset>&<limit>")]
 pub fn tracks(
     artist: Option<String>,
+    album: Option<String>,
     offset: Option<i64>,
     limit: Option<i64>,
 ) -> Json<Response<TracksData>> {
@@ -34,6 +35,10 @@ pub fn tracks(
 
     if let Some(artist) = artist {
         query = query.filter(schema::tracks::artist_id.eq(artist))
+    }
+
+    if let Some(album) = album {
+        query = query.filter(schema::tracks::album_id.eq(album))
     }
 
     if let Some(offset) = offset {
