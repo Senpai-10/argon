@@ -20,8 +20,10 @@ diesel::table! {
 }
 
 diesel::table! {
-    covers (track_id) {
-        track_id -> Text,
+    covers (id) {
+        id -> Int4,
+        track_id -> Nullable<Text>,
+        mime_type -> Text,
         image_data -> Bytea,
     }
 }
@@ -65,7 +67,6 @@ diesel::table! {
 }
 
 diesel::joinable!(albums -> artists (artist_id));
-diesel::joinable!(covers -> tracks (track_id));
 diesel::joinable!(features -> artists (artist_id));
 diesel::joinable!(features -> tracks (track_id));
 diesel::joinable!(tracks -> albums (album_id));

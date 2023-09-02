@@ -49,7 +49,3 @@ CREATE TABLE scan_info (
     tracks                  INT NOT NULL
 );
 
-CREATE TABLE covers (
-    track_id                TEXT PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
-    image_data              BYTEA NOT NULL
-);
