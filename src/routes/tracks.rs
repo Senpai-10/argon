@@ -7,15 +7,20 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub struct Data {
+pub struct TracksData {
     pub tracks: Vec<Track>,
     pub offset: Option<i64>,
     pub limit: Option<i64>,
     pub total: i64,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct TrackData {
+    pub track: Track,
+}
+
 #[get("/tracks?<offset>&<limit>")]
-pub fn tracks(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
+pub fn tracks(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksData>> {
     let mut conn = db::establish_connection();
     let mut query = schema::tracks::dsl::tracks.into_boxed();
 
@@ -42,10 +47,30 @@ pub fn tracks(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
         .get_result::<i64>(&mut conn)
         .unwrap();
 
-    Json(Response::data(Data {
+    Json(Response::data(TracksData {
         tracks,
         offset,
         limit,
         total: total_tracks,
     }))
+}
+
+#[get("/tracks/<id>")]
+pub fn track(id: String) -> Json<Response<TrackData>> {
+    let mut conn = db::establish_connection();
+
+    let track = match schema::tracks::dsl::tracks
+        .filter(schema::tracks::id.eq(&id))
+        .get_result::<Track>(&mut conn)
+    {
+        Ok(v) => v,
+        Err(e) => {
+            return Json(Response::error {
+                title: "Track not found".to_string(),
+                body: Some(e.to_string()),
+            })
+        }
+    };
+
+    Json(Response::data(TrackData { track }))
 }

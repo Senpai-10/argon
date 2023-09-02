@@ -30,6 +30,7 @@ fn rocket() -> _ {
         "/api/",
         routes![
             routes::tracks::tracks,
+            routes::tracks::track,
             routes::stats::stats,
             routes::scan::scan_route,
         ],
