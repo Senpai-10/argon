@@ -14,35 +14,25 @@ pub struct ResTracks {
 #[derive(Serialize, Deserialize)]
 pub struct ResTracksFeed {
     pub tracks: Vec<Track>,
-    pub offset: i64,
-    pub limit: i64,
+    pub offset: Option<i64>,
+    pub limit: Option<i64>,
     pub total: i64,
 }
 
-#[get("/tracks")]
-pub fn tracks() -> Json<ResTracks> {
+#[get("/tracks?<offset>&<limit>")]
+pub fn tracks(offset: Option<i64>, limit: Option<i64>) -> Json<ResTracksFeed> {
     let mut conn = db::establish_connection();
-    let tracks = schema::tracks::dsl::tracks
-        .load::<Track>(&mut conn)
-        .expect("Failed to fetch tracks");
+    let mut query = schema::tracks::dsl::tracks.into_boxed();
 
-    let total_tracks = schema::tracks::dsl::tracks
-        .count()
-        .get_result::<i64>(&mut conn)
-        .unwrap();
+    if let Some(offset) = offset {
+        query = query.offset(offset);
+    }
 
-    Json(ResTracks {
-        tracks,
-        total: total_tracks,
-    })
-}
+    if let Some(limit) = limit {
+        query = query.limit(limit);
+    }
 
-#[get("/tracks/feed?<offset>&<limit>")]
-pub fn tracks_feed(offset: i64, limit: i64) -> Json<ResTracksFeed> {
-    let mut conn = db::establish_connection();
-    let tracks = schema::tracks::dsl::tracks
-        .offset(offset)
-        .limit(limit)
+    let tracks = query
         .load::<Track>(&mut conn)
         .expect("Failed to fetch tracks");
 
