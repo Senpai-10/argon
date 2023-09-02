@@ -20,6 +20,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    covers (track_id) {
+        track_id -> Text,
+        image_data -> Bytea,
+    }
+}
+
+diesel::table! {
     features (id) {
         id -> Text,
         artist_id -> Text,
@@ -58,6 +65,7 @@ diesel::table! {
 }
 
 diesel::joinable!(albums -> artists (artist_id));
+diesel::joinable!(covers -> tracks (track_id));
 diesel::joinable!(features -> artists (artist_id));
 diesel::joinable!(features -> tracks (track_id));
 diesel::joinable!(tracks -> albums (album_id));
@@ -66,6 +74,7 @@ diesel::joinable!(tracks -> artists (artist_id));
 diesel::allow_tables_to_appear_in_same_query!(
     albums,
     artists,
+    covers,
     features,
     scan_info,
     tracks,
