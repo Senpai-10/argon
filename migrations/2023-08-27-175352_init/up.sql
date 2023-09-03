@@ -57,19 +57,31 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_artists_updated_at
+CREATE OR REPLACE FUNCTION tracks_on_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF row(NEW.plays) IS DISTINCT FROM row(OLD.plays) THEN
+        NEW.last_play = now();
+    END IF;
+
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_artists
     BEFORE UPDATE ON artists
         FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
 
-CREATE TRIGGER update_albums_updated_at
+CREATE TRIGGER update_albums
     BEFORE UPDATE ON albums
         FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
 
-CREATE TRIGGER update_tracks_updated_at
+CREATE TRIGGER update_tracks
     BEFORE UPDATE ON tracks
-        FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
+        FOR EACH ROW EXECUTE PROCEDURE tracks_on_update();
 
-CREATE TRIGGER update_features_updated_at
+CREATE TRIGGER update_features
     BEFORE UPDATE ON features
         FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
 
