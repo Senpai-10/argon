@@ -8,7 +8,7 @@ mod scan;
 mod schema;
 
 use dotenvy::dotenv;
-use scan::{is_first_run, scan};
+use scan::{is_first_run, Scanner};
 
 #[launch]
 fn rocket() -> _ {
@@ -22,7 +22,11 @@ fn rocket() -> _ {
         let mut conn = db::establish_connection();
 
         if is_first_run(&mut conn) {
-            scan(&mut conn);
+            let mut scanner = Scanner::new(conn);
+
+            if let Err(e) = scanner.start() {
+                error!("Scanner error: {}", e.to_string())
+            }
         }
     }
 

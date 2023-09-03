@@ -4,15 +4,17 @@ use crate::models::features::NewFeature;
 use crate::models::scan_info::{NewScanInfo, ScanInfo};
 use crate::models::tracks::NewTrack;
 use crate::schema;
-use chrono::Utc;
+use chrono::{NaiveDateTime, Utc};
 use diesel::dsl::{exists, select};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use dirs::home_dir;
 use id3::TagLike;
 use mpeg_audio_header::{Header, ParseMode};
 use nanoid::nanoid;
 use std::env;
-use std::path::PathBuf;
+use std::fmt;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 /// check if this is the first time the program starts
@@ -61,40 +63,142 @@ fn feature_exists(conn: &mut PgConnection, artist_id: String, track_id: String) 
     .unwrap()
 }
 
-pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
-    let music_dir: PathBuf = match env::var("ARGON_MUSIC_LIB") {
-        Ok(v) => v.into(),
-        Err(_) => {
-            let home = dirs::home_dir().unwrap();
+pub enum ScanError {
+    ScannerLocked,
+}
 
-            home.join("Music")
+impl fmt::Display for ScanError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ScanError::ScannerLocked => write!(f, "Scanner is already running"),
         }
-    };
+    }
+}
 
-    if !music_dir.exists() {
-        error!("Music dir not found! {}", music_dir.display());
-        return None;
+#[derive(Default)]
+struct Counter {
+    artists: i32,
+    albums: i32,
+    tracks: i32,
+}
+
+pub struct Scanner {
+    conn: PgConnection,
+    counter: Counter,
+    scan_start: NaiveDateTime,
+}
+
+impl Scanner {
+    pub fn new(conn: PgConnection) -> Self {
+        Self {
+            conn,
+            counter: Counter::default(),
+            scan_start: Utc::now().naive_utc(),
+        }
     }
 
-    let mut new_artists_counter: i32 = 0;
-    let mut new_albums_counter: i32 = 0;
-    let mut new_tracks_counter: i32 = 0;
+    fn get_lock_file(&self) -> PathBuf {
+        home_dir().unwrap().join(".argon-scan-lock")
+    }
 
-    let scan_start = Utc::now().naive_utc();
+    pub fn is_locked(&self) -> bool {
+        self.get_lock_file().exists()
+    }
 
-    info!("Scanning Music library! '{}'", music_dir.display());
+    fn lock(&self) {
+        let file = self.get_lock_file();
 
-    for entry in WalkDir::new(music_dir).into_iter().flatten() {
-        let file_path = entry.path();
+        if !file.exists() {
+            _ = std::fs::write(file, "");
+        }
+    }
 
-        if !file_path.is_file() || file_path.extension().unwrap() != "mp3" {
-            continue;
+    fn unlock(&self) {
+        let file = self.get_lock_file();
+
+        if file.exists() {
+            _ = std::fs::remove_file(file);
+        }
+    }
+
+    fn record_scan_info(&mut self) -> Result<ScanInfo, diesel::result::Error> {
+        let scan_end = Utc::now().naive_utc();
+
+        let new_scan_info = NewScanInfo {
+            scan_start: self.scan_start,
+            scan_end,
+            artists: self.counter.artists,
+            albums: self.counter.albums,
+            tracks: self.counter.tracks,
+        };
+
+        info!(
+            "Scan Done({}s), Found {} artist, {} album, {} track",
+            (new_scan_info.scan_end - new_scan_info.scan_start).num_seconds(),
+            new_scan_info.artists,
+            new_scan_info.albums,
+            new_scan_info.tracks,
+        );
+
+        diesel::insert_into(schema::scan_info::dsl::scan_info)
+            .values(&new_scan_info)
+            .get_result::<ScanInfo>(&mut self.conn)
+    }
+
+    pub fn start(&mut self) -> Result<Option<ScanInfo>, ScanError> {
+        if self.is_locked() {
+            return Err(ScanError::ScannerLocked);
         }
 
+        let music_dir: PathBuf = match env::var("ARGON_MUSIC_LIB") {
+            Ok(v) => v.into(),
+            Err(_) => {
+                let home = dirs::home_dir().unwrap();
+
+                home.join("Music")
+            }
+        };
+
+        if !music_dir.exists() {
+            error!("Music dir not found! {}", music_dir.display());
+            return Ok(None);
+        }
+
+        self.lock();
+
+        info!("Scanning Music library! '{}'", music_dir.display());
+
+        for entry in WalkDir::new(music_dir).into_iter().flatten() {
+            let file_path = entry.path();
+
+            if !file_path.is_file() || file_path.extension().unwrap() != "mp3" {
+                continue;
+            }
+
+            self.process_file(file_path);
+        }
+
+        self.unlock();
+
+        match self.record_scan_info() {
+            Ok(si) => {
+                info!("Scan info saved!");
+
+                return Ok(Some(si));
+            }
+            Err(e) => {
+                error!("Failed to add scan info to database!, {e}")
+            }
+        };
+
+        Ok(None)
+    }
+
+    fn process_file(&mut self, file_path: &Path) {
         let id = sha256::try_digest(file_path).unwrap();
 
-        if track_exists(conn, &id) {
-            continue;
+        if track_exists(&mut self.conn, &id) {
+            return;
         }
 
         let mut features_insert_queue: Vec<NewFeature> = Vec::new();
@@ -112,7 +216,7 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
             path: file_path.to_str().unwrap().to_string(),
         };
 
-        new_tracks_counter += 1;
+        self.counter.tracks += 1;
 
         let tag = id3::Tag::read_from_path(file_path).unwrap();
 
@@ -125,7 +229,7 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
                 let artist_name_hash = sha256::digest(artist);
 
                 // Create artist if does not exists
-                if !artist_exists(conn, &artist_name_hash) {
+                if !artist_exists(&mut self.conn, &artist_name_hash) {
                     let new_artist = NewArtist {
                         id: artist_name_hash.clone(),
                         name: artist.to_string(),
@@ -133,11 +237,11 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
 
                     match diesel::insert_into(schema::artists::dsl::artists)
                         .values(new_artist)
-                        .execute(conn)
+                        .execute(&mut self.conn)
                     {
                         Ok(_) => {
                             info!("Added new artist '{}' to database", &artist);
-                            new_artists_counter += 1;
+                            self.counter.artists += 1;
                         }
                         Err(e) => {
                             error!("Failed to add artist to database!, {e}");
@@ -150,7 +254,7 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
                     continue;
                 }
 
-                if !feature_exists(conn, artist.to_string(), new_track.id.clone()) {
+                if !feature_exists(&mut self.conn, artist.to_string(), new_track.id.clone()) {
                     let new_feature = NewFeature {
                         id: nanoid!(),
                         artist_id: artist_name_hash.clone(),
@@ -163,7 +267,7 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
 
             if let Some(album) = tag.album() {
                 if !album_exists(
-                    conn,
+                    &mut self.conn,
                     &album.to_string(),
                     &new_track.artist_id.clone().unwrap(),
                 ) {
@@ -175,11 +279,11 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
 
                     match diesel::insert_into(schema::albums::dsl::albums)
                         .values(&new_album)
-                        .execute(conn)
+                        .execute(&mut self.conn)
                     {
                         Ok(_) => {
                             info!("Added new album '{}' to database", new_album.title);
-                            new_albums_counter += 1;
+                            self.counter.albums += 1;
                         }
                         Err(e) => {
                             error!("Failed to add album to database!, {e}");
@@ -203,7 +307,7 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
 
         match diesel::insert_into(schema::tracks::dsl::tracks)
             .values(&new_track)
-            .execute(conn)
+            .execute(&mut self.conn)
         {
             Ok(_) => {
                 info!(
@@ -223,7 +327,7 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
         if !features_insert_queue.is_empty() {
             match diesel::insert_into(schema::features::dsl::features)
                 .values(&features_insert_queue)
-                .execute(conn)
+                .execute(&mut self.conn)
             {
                 Ok(_) => {
                     info!(
@@ -238,38 +342,4 @@ pub fn scan(conn: &mut PgConnection) -> Option<ScanInfo> {
             }
         }
     }
-
-    let scan_end = Utc::now().naive_utc();
-
-    let new_scan_info = NewScanInfo {
-        scan_start,
-        scan_end,
-        artists: new_artists_counter,
-        albums: new_albums_counter,
-        tracks: new_tracks_counter,
-    };
-
-    info!(
-        "Scan Done({}s), Found {} artist, {} album, {} track",
-        (scan_end - scan_start).num_seconds(),
-        new_scan_info.artists,
-        new_scan_info.albums,
-        new_scan_info.tracks,
-    );
-
-    match diesel::insert_into(schema::scan_info::dsl::scan_info)
-        .values(&new_scan_info)
-        .get_result::<ScanInfo>(conn)
-    {
-        Ok(si) => {
-            info!("Scan info saved!");
-
-            return Some(si);
-        }
-        Err(e) => {
-            error!("Failed to add scan info to database!, {e}")
-        }
-    };
-
-    None
 }

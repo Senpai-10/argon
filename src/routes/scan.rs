@@ -6,9 +6,7 @@ use diesel::prelude::*;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
-use crate::scan::scan;
-use dirs::home_dir;
-use std::path::PathBuf;
+use crate::scan::Scanner;
 
 #[derive(Deserialize, Serialize)]
 pub struct Data {
@@ -17,12 +15,6 @@ pub struct Data {
 
 #[get("/scan?<clean>")]
 pub async fn scan_route(clean: Option<bool>) -> Json<Response<Data>> {
-    if scan_lock_file_path().exists() {
-        return Json(Response::error {
-            msg: "Already scanning".into(),
-        });
-    }
-
     let mut conn = db::establish_connection();
 
     if let Some(true) = clean {
@@ -47,31 +39,14 @@ pub async fn scan_route(clean: Option<bool>) -> Json<Response<Data>> {
         };
     }
 
-    scan_lock();
+    let mut scanner = Scanner::new(conn);
 
-    let scan_info = scan(&mut conn);
+    let mut data = Data { scan_info: None };
 
-    scan_unlock();
-
-    Json(Response::data(Data { scan_info }))
-}
-
-fn scan_lock_file_path() -> PathBuf {
-    home_dir().unwrap().join(".argon-scan-lock")
-}
-
-fn scan_lock() {
-    let file = scan_lock_file_path();
-
-    if !file.exists() {
-        _ = std::fs::write(file, "");
+    match scanner.start() {
+        Ok(v) => data.scan_info = v,
+        Err(e) => return Json(Response::error { msg: e.to_string() }),
     }
-}
 
-fn scan_unlock() {
-    let file = scan_lock_file_path();
-
-    if file.exists() {
-        _ = std::fs::remove_file(file);
-    }
+    Json(Response::data(data))
 }
