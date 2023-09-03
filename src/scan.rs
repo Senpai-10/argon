@@ -8,7 +8,6 @@ use chrono::{NaiveDateTime, Utc};
 use diesel::dsl::{exists, select};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use dirs::home_dir;
 use id3::TagLike;
 use mpeg_audio_header::{Header, ParseMode};
 use nanoid::nanoid;
@@ -98,7 +97,7 @@ impl Scanner {
     }
 
     fn get_lock_file(&self) -> PathBuf {
-        home_dir().unwrap().join(".argon-scan-lock")
+        env::temp_dir().join(".argon-scanner-lock")
     }
 
     pub fn is_locked(&self) -> bool {
