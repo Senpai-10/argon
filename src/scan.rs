@@ -18,7 +18,7 @@ use walkdir::WalkDir;
 
 /// check if this is the first time the program starts
 pub fn is_first_run(conn: &mut PgConnection) -> bool {
-    let count = schema::scan_info::dsl::scan_info
+    let count = schema::scan_info::table
         .count()
         .get_result::<i64>(conn)
         .unwrap_or(0);
@@ -28,7 +28,7 @@ pub fn is_first_run(conn: &mut PgConnection) -> bool {
 
 fn track_exists(conn: &mut PgConnection, id: &String) -> bool {
     select(exists(
-        schema::tracks::dsl::tracks.filter(schema::tracks::dsl::id.eq(id)),
+        schema::tracks::table.filter(schema::tracks::id.eq(id)),
     ))
     .get_result::<bool>(conn)
     .unwrap()
@@ -36,9 +36,9 @@ fn track_exists(conn: &mut PgConnection, id: &String) -> bool {
 
 fn album_exists(conn: &mut PgConnection, title: &String, artist_id: &String) -> bool {
     select(exists(
-        schema::albums::dsl::albums
-            .filter(schema::albums::dsl::title.eq(title))
-            .filter(schema::albums::dsl::artist_id.eq(artist_id)),
+        schema::albums::table
+            .filter(schema::albums::title.eq(title))
+            .filter(schema::albums::artist_id.eq(artist_id)),
     ))
     .get_result::<bool>(conn)
     .unwrap()
@@ -46,7 +46,7 @@ fn album_exists(conn: &mut PgConnection, title: &String, artist_id: &String) -> 
 
 fn artist_exists(conn: &mut PgConnection, id: &String) -> bool {
     select(exists(
-        schema::artists::dsl::artists.filter(schema::artists::dsl::id.eq(id)),
+        schema::artists::table.filter(schema::artists::id.eq(id)),
     ))
     .get_result::<bool>(conn)
     .unwrap()
@@ -54,9 +54,9 @@ fn artist_exists(conn: &mut PgConnection, id: &String) -> bool {
 
 fn feature_exists(conn: &mut PgConnection, artist_id: String, track_id: String) -> bool {
     select(exists(
-        schema::features::dsl::features
-            .filter(schema::features::dsl::artist_id.eq(artist_id))
-            .filter(schema::features::dsl::track_id.eq(track_id)),
+        schema::features::table
+            .filter(schema::features::artist_id.eq(artist_id))
+            .filter(schema::features::track_id.eq(track_id)),
     ))
     .get_result::<bool>(conn)
     .unwrap()
@@ -139,7 +139,7 @@ impl Scanner {
             new_scan_info.tracks,
         );
 
-        diesel::insert_into(schema::scan_info::dsl::scan_info)
+        diesel::insert_into(schema::scan_info::table)
             .values(&new_scan_info)
             .get_result::<ScanInfo>(&mut self.conn)
     }
@@ -232,7 +232,7 @@ impl Scanner {
                         name: artist.to_string(),
                     };
 
-                    match diesel::insert_into(schema::artists::dsl::artists)
+                    match diesel::insert_into(schema::artists::table)
                         .values(new_artist)
                         .execute(&mut self.conn)
                     {
@@ -274,7 +274,7 @@ impl Scanner {
                         artist_id: new_track.artist_id.clone().unwrap(),
                     };
 
-                    match diesel::insert_into(schema::albums::dsl::albums)
+                    match diesel::insert_into(schema::albums::table)
                         .values(&new_album)
                         .execute(&mut self.conn)
                     {
@@ -302,7 +302,7 @@ impl Scanner {
             new_track.track_number = Some(track_num as i32)
         }
 
-        match diesel::insert_into(schema::tracks::dsl::tracks)
+        match diesel::insert_into(schema::tracks::table)
             .values(&new_track)
             .execute(&mut self.conn)
         {
@@ -322,7 +322,7 @@ impl Scanner {
         }
 
         if !features_insert_queue.is_empty() {
-            match diesel::insert_into(schema::features::dsl::features)
+            match diesel::insert_into(schema::features::table)
                 .values(&features_insert_queue)
                 .execute(&mut self.conn)
             {

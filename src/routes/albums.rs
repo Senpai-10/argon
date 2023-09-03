@@ -26,7 +26,7 @@ pub fn albums(
     limit: Option<i64>,
 ) -> Json<Response<Data>> {
     let mut conn = db::establish_connection();
-    let mut query = schema::albums::dsl::albums.into_boxed();
+    let mut query = schema::albums::table.into_boxed();
 
     if let Some(artist) = artist {
         query = query.filter(schema::albums::artist_id.eq(artist));
@@ -45,7 +45,7 @@ pub fn albums(
         Err(e) => return Json(Response::error { msg: e.to_string() }),
     };
 
-    let total = schema::albums::dsl::albums
+    let total = schema::albums::table
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap();
@@ -62,7 +62,7 @@ pub fn albums(
 pub fn album(id: String) -> Json<Response<AlbumData>> {
     let mut conn = db::establish_connection();
 
-    let album = match schema::albums::dsl::albums
+    let album = match schema::albums::table
         .filter(schema::albums::id.eq(id))
         .get_result::<Album>(&mut conn)
     {

@@ -17,22 +17,22 @@ pub struct Stats {
 pub fn stats() -> Json<Stats> {
     let mut conn = db::establish_connection();
 
-    let scans = schema::scan_info::dsl::scan_info
-        .order(schema::scan_info::dsl::id)
+    let scans = schema::scan_info::table
+        .order(schema::scan_info::id)
         .load::<ScanInfo>(&mut conn)
         .unwrap();
 
-    let artists = schema::artists::dsl::artists
+    let artists = schema::artists::table
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap_or(0);
 
-    let albums = schema::albums::dsl::albums
+    let albums = schema::albums::table
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap_or(0);
 
-    let tracks = schema::tracks::dsl::tracks
+    let tracks = schema::tracks::table
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap_or(0);

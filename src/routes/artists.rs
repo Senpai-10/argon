@@ -17,7 +17,7 @@ pub struct Data {
 #[get("/artists?<offset>&<limit>")]
 pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
     let mut conn = db::establish_connection();
-    let mut query = schema::artists::dsl::artists.into_boxed();
+    let mut query = schema::artists::table.into_boxed();
 
     if let Some(offset) = offset {
         query = query.offset(offset);
@@ -32,7 +32,7 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
         Err(e) => return Json(Response::error { msg: e.to_string() }),
     };
 
-    let total = schema::artists::dsl::artists
+    let total = schema::artists::table
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap();

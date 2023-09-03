@@ -31,7 +31,7 @@ pub fn tracks(
     limit: Option<i64>,
 ) -> Json<Response<TracksData>> {
     let mut conn = db::establish_connection();
-    let mut query = schema::tracks::dsl::tracks.into_boxed();
+    let mut query = schema::tracks::table.into_boxed();
 
     if let Some(artist) = artist {
         query = query.filter(schema::tracks::artist_id.eq(artist))
@@ -54,7 +54,7 @@ pub fn tracks(
         Err(e) => return Json(Response::error { msg: e.to_string() }),
     };
 
-    let total_tracks = schema::tracks::dsl::tracks
+    let total_tracks = schema::tracks::table
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap();
@@ -71,7 +71,7 @@ pub fn tracks(
 pub fn track(id: String) -> Json<Response<TrackData>> {
     let mut conn = db::establish_connection();
 
-    let track = match schema::tracks::dsl::tracks
+    let track = match schema::tracks::table
         .filter(schema::tracks::id.eq(&id))
         .get_result::<Track>(&mut conn)
     {
@@ -86,7 +86,7 @@ pub fn track(id: String) -> Json<Response<TrackData>> {
 pub fn track_stream<'a>(id: String) -> Result<SeekStream<'a>, NotFound<String>> {
     let mut conn = db::establish_connection();
 
-    let track = match schema::tracks::dsl::tracks
+    let track = match schema::tracks::table
         .filter(schema::tracks::id.eq(&id))
         .get_result::<Track>(&mut conn)
     {
@@ -110,7 +110,7 @@ pub fn track_stream<'a>(id: String) -> Result<SeekStream<'a>, NotFound<String>> 
 pub fn track_cover(id: String) -> Result<Vec<u8>, NotFound<String>> {
     let mut conn = db::establish_connection();
 
-    let track = match schema::tracks::dsl::tracks
+    let track = match schema::tracks::table
         .filter(schema::tracks::id.eq(&id))
         .get_result::<Track>(&mut conn)
     {
