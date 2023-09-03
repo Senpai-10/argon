@@ -24,7 +24,7 @@ CREATE TABLE tracks (
     year                    INT,
     track_number            INT,
     last_play               TIMESTAMP,
-    plays                   INT NOT NULL,
+    plays                   INT NOT NULL DEFAULT 0,
     path                    TEXT NOT NULL,
 
     created_at              TIMESTAMP NOT NULL DEFAULT NOW(),

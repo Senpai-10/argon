@@ -211,8 +211,6 @@ impl Scanner {
             duration: 0,
             year: None,
             track_number: None,
-            last_play: None,
-            plays: 0,
             path: file_path.to_str().unwrap().to_string(),
         };
 

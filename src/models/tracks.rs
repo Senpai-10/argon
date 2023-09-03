@@ -34,7 +34,5 @@ pub struct NewTrack {
     pub duration: i32,
     pub year: Option<i32>,
     pub track_number: Option<i32>,
-    pub last_play: Option<NaiveDateTime>,
-    pub plays: i32,
     pub path: String,
 }
