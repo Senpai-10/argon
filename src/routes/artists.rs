@@ -1,5 +1,6 @@
 use super::Response;
 use crate::db;
+use crate::models::features::Feature;
 use crate::models::{artists::Artist, tracks::Track};
 use crate::schema;
 use diesel::prelude::*;
@@ -7,10 +8,17 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct TrackWithFeatures {
+    #[serde(flatten)]
+    track: Track,
+    features: Vec<Artist>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ArtistWithTracks {
     #[serde(flatten)]
     artist: Artist,
-    tracks: Vec<Track>,
+    tracks: Vec<TrackWithFeatures>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -45,9 +53,19 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
         .grouped_by(&all_artists)
         .into_iter()
         .zip(all_artists)
-        .map(|(track, artist)| ArtistWithTracks {
+        .map(|(tracks, artist)| ArtistWithTracks {
             artist,
-            tracks: track,
+            tracks: tracks
+                .into_iter()
+                .map(|t| TrackWithFeatures {
+                    features: Feature::belonging_to(&t)
+                        .inner_join(schema::artists::table)
+                        .select(Artist::as_select())
+                        .load(&mut conn)
+                        .unwrap(),
+                    track: t,
+                })
+                .collect::<Vec<TrackWithFeatures>>(),
         })
         .collect::<Vec<ArtistWithTracks>>();
 
