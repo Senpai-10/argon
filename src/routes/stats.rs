@@ -1,3 +1,4 @@
+use super::Response;
 use crate::db;
 use crate::models::scan_info::ScanInfo;
 use crate::schema;
@@ -14,13 +15,16 @@ pub struct Stats {
 }
 
 #[get("/stats")]
-pub fn stats() -> Json<Stats> {
+pub fn stats() -> Json<Response<Stats>> {
     let mut conn = db::establish_connection();
 
-    let scans = schema::scan_info::table
+    let scans = match schema::scan_info::table
         .order(schema::scan_info::id)
         .load::<ScanInfo>(&mut conn)
-        .unwrap();
+    {
+        Ok(v) => v,
+        Err(e) => return Json(Response::error { msg: e.to_string() }),
+    };
 
     let artists = schema::artists::table
         .count()
@@ -48,5 +52,5 @@ pub fn stats() -> Json<Stats> {
         stats.last_scan = Some(*last_scan);
     }
 
-    Json(stats)
+    Json(Response::data(stats))
 }
