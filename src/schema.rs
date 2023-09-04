@@ -11,20 +11,21 @@ diesel::table! {
 }
 
 diesel::table! {
-    artists (id) {
+    albums_tracks (id) {
         id -> Text,
-        name -> Text,
+        album_id -> Text,
+        track_id -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
 }
 
 diesel::table! {
-    covers (id) {
-        id -> Int4,
-        track_id -> Nullable<Text>,
-        mime_type -> Text,
-        image_data -> Bytea,
+    artists (id) {
+        id -> Text,
+        name -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
@@ -67,6 +68,8 @@ diesel::table! {
 }
 
 diesel::joinable!(albums -> artists (artist_id));
+diesel::joinable!(albums_tracks -> albums (album_id));
+diesel::joinable!(albums_tracks -> tracks (track_id));
 diesel::joinable!(features -> artists (artist_id));
 diesel::joinable!(features -> tracks (track_id));
 diesel::joinable!(tracks -> albums (album_id));
@@ -74,8 +77,8 @@ diesel::joinable!(tracks -> artists (artist_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     albums,
+    albums_tracks,
     artists,
-    covers,
     features,
     scan_info,
     tracks,

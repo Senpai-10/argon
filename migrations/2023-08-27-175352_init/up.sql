@@ -31,6 +31,15 @@ CREATE TABLE tracks (
     updated_at              TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE albums_tracks (
+    id                      TEXT PRIMARY KEY,
+    album_id                TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
+    track_id                TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE features (
     id                      TEXT PRIMARY KEY,
     artist_id               TEXT NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
@@ -80,6 +89,10 @@ CREATE TRIGGER update_albums
 CREATE TRIGGER update_tracks
     BEFORE UPDATE ON tracks
         FOR EACH ROW EXECUTE PROCEDURE tracks_on_update();
+
+CREATE TRIGGER update_albums_tracks
+    BEFORE UPDATE ON albums_tracks
+        FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
 
 CREATE TRIGGER update_features
     BEFORE UPDATE ON features
