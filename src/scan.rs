@@ -286,6 +286,8 @@ impl Scanner {
                             error!("Failed to add album to database!, {e}");
                         }
                     }
+
+                    new_track.album_id = Some(new_album.id);
                 }
             }
         }
