@@ -3,7 +3,7 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Selectable, Serialize, Deserialize)]
+#[derive(Identifiable, Queryable, Selectable, Debug, Serialize, Deserialize)]
 #[diesel(table_name = schema::artists)]
 pub struct Artist {
     pub id: String,

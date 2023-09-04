@@ -1,9 +1,11 @@
+use crate::models::albums::Album;
+use crate::models::artists::Artist;
 use crate::schema;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Selectable, Debug, Serialize, Deserialize)]
+#[derive(Identifiable, Queryable, Selectable, Associations, Debug, Serialize, Deserialize)]
 #[diesel(table_name = schema::tracks)]
 #[diesel(belongs_to(Artist, foreign_key = artist_id))]
 #[diesel(belongs_to(Album, foreign_key = album_id))]

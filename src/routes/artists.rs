@@ -1,14 +1,21 @@
 use super::Response;
 use crate::db;
-use crate::models::artists::Artist;
+use crate::models::{artists::Artist, tracks::Track};
 use crate::schema;
 use diesel::prelude::*;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct ArtistWithTracks {
+    #[serde(flatten)]
+    artist: Artist,
+    tracks: Vec<Track>,
+}
+
 #[derive(Deserialize, Serialize)]
 pub struct Data {
-    artists: Vec<Artist>,
+    artists: Vec<ArtistWithTracks>,
     offset: Option<i64>,
     limit: Option<i64>,
     total: i64,
@@ -27,10 +34,22 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
         query = query.limit(limit);
     }
 
-    let artists = match query.load::<Artist>(&mut conn) {
-        Ok(v) => v,
-        Err(e) => return Json(Response::error { msg: e.to_string() }),
-    };
+    let all_artists = query.select(Artist::as_select()).load(&mut conn).unwrap();
+
+    let tracks = Track::belonging_to(&all_artists)
+        .select(Track::as_select())
+        .load(&mut conn)
+        .unwrap();
+
+    let artist_with_tracks = tracks
+        .grouped_by(&all_artists)
+        .into_iter()
+        .zip(all_artists)
+        .map(|(track, artist)| ArtistWithTracks {
+            artist,
+            tracks: track,
+        })
+        .collect::<Vec<ArtistWithTracks>>();
 
     let total = schema::artists::table
         .count()
@@ -38,7 +57,7 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
         .unwrap();
 
     Json(Response::data(Data {
-        artists,
+        artists: artist_with_tracks,
         offset,
         limit,
         total,

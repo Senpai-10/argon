@@ -1,9 +1,10 @@
+use crate::models::artists::Artist;
 use crate::schema;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Selectable, Serialize, Deserialize)]
+#[derive(Queryable, Selectable, Identifiable, Associations, Debug, Serialize, Deserialize)]
 #[diesel(table_name = schema::albums)]
 #[diesel(belongs_to(Artist, foreign_key = artist_id))]
 pub struct Album {
