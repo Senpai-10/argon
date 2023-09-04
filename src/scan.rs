@@ -1,5 +1,4 @@
 use crate::models::albums::NewAlbum;
-use crate::models::albums_tracks::NewAlbumTrack;
 use crate::models::artists::NewArtist;
 use crate::models::features::NewFeature;
 use crate::models::scan_info::{NewScanInfo, ScanInfo};
@@ -202,7 +201,6 @@ impl Scanner {
         }
 
         let mut features_insert_queue: Vec<NewFeature> = Vec::new();
-        let mut albums_tracks_insert_queue: Vec<NewAlbumTrack> = Vec::new();
 
         let mut new_track = NewTrack {
             id,
@@ -288,14 +286,6 @@ impl Scanner {
                             error!("Failed to add album to database!, {e}");
                         }
                     }
-
-                    let new_album_track = NewAlbumTrack {
-                        id: nanoid!(),
-                        album_id: new_album.id,
-                        track_id: new_track.id.clone(),
-                    };
-
-                    albums_tracks_insert_queue.push(new_album_track)
                 }
             }
         }
@@ -346,19 +336,6 @@ impl Scanner {
                 Err(e) => {
                     error!("Failed to add featured artist to database!, {e}");
                 }
-            }
-        }
-
-        if !albums_tracks_insert_queue.is_empty() {
-            if let Err(e) = diesel::insert_into(schema::albums_tracks::table)
-                .values(&albums_tracks_insert_queue)
-                .execute(&mut self.conn)
-            {
-                error!(
-                    "Failed to add track({}) album({}) to database!, {e}",
-                    new_track.id,
-                    new_track.album_id.unwrap()
-                );
             }
         }
     }
