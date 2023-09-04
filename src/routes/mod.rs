@@ -11,4 +11,5 @@ pub mod albums;
 pub mod artists;
 pub mod scan;
 pub mod stats;
+pub mod stream;
 pub mod tracks;
