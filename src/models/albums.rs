@@ -1,10 +1,21 @@
 use crate::models::artists::Artist;
+use crate::models::tracks::TrackInRes;
 use crate::schema;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Selectable, Identifiable, Associations, Debug, Serialize, Deserialize)]
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AlbumWithTracks {
+    #[serde(flatten)]
+    pub album: Album,
+    pub artist: Artist,
+    pub tracks: Vec<TrackInRes>,
+}
+
+#[derive(
+    Queryable, Selectable, Identifiable, Associations, Debug, Serialize, Deserialize, Clone,
+)]
 #[diesel(table_name = schema::albums)]
 #[diesel(belongs_to(Artist, foreign_key = artist_id))]
 pub struct Album {

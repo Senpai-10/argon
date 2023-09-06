@@ -42,6 +42,10 @@ fn rocket() -> _ {
             routes::albums::album,
             routes::stats::stats,
             routes::scan::scan_route,
+            routes::search::search,
+            routes::search::search_artists,
+            routes::search::search_tracks,
+            routes::search::search_albums,
         ],
     )
 }

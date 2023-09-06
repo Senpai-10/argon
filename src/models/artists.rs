@@ -1,9 +1,17 @@
+use crate::models::tracks::TrackInRes;
 use crate::schema;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Identifiable, Queryable, Selectable, Debug, Serialize, Deserialize)]
+#[derive(Deserialize, Serialize, Debug)]
+pub struct ArtistWithTracks {
+    #[serde(flatten)]
+    pub artist: Artist,
+    pub tracks: Vec<TrackInRes>,
+}
+
+#[derive(Identifiable, Queryable, Selectable, Debug, Serialize, Deserialize, Clone)]
 #[diesel(table_name = schema::artists)]
 pub struct Artist {
     pub id: String,

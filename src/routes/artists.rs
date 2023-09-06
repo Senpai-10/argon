@@ -1,25 +1,14 @@
 use super::Response;
 use crate::db;
+use crate::models::albums::Album;
+use crate::models::artists::ArtistWithTracks;
 use crate::models::features::Feature;
+use crate::models::tracks::TrackInRes;
 use crate::models::{artists::Artist, tracks::Track};
 use crate::schema;
 use diesel::prelude::*;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct TrackWithFeatures {
-    #[serde(flatten)]
-    track: Track,
-    features: Vec<Artist>,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct ArtistWithTracks {
-    #[serde(flatten)]
-    artist: Artist,
-    tracks: Vec<TrackWithFeatures>,
-}
 
 #[derive(Deserialize, Serialize)]
 pub struct Data {
@@ -44,9 +33,9 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
 
     let all_artists = query.select(Artist::as_select()).load(&mut conn).unwrap();
 
-    let tracks = Track::belonging_to(&all_artists)
-        .select(Track::as_select())
-        .load(&mut conn)
+    let tracks: Vec<(Track, Album)> = Track::belonging_to(&all_artists)
+        .inner_join(schema::albums::table)
+        .load::<(Track, Album)>(&mut conn)
         .unwrap();
 
     let artist_with_tracks = tracks
@@ -54,10 +43,12 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
         .into_iter()
         .zip(all_artists)
         .map(|(tracks, artist)| ArtistWithTracks {
-            artist,
+            artist: artist.clone(),
             tracks: tracks
                 .into_iter()
-                .map(|t| TrackWithFeatures {
+                .map(|(t, album)| TrackInRes {
+                    artist: Some(artist.clone()),
+                    album: Some(album),
                     features: Feature::belonging_to(&t)
                         .inner_join(schema::artists::table)
                         .select(Artist::as_select())
@@ -65,7 +56,7 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
                         .unwrap(),
                     track: t,
                 })
-                .collect::<Vec<TrackWithFeatures>>(),
+                .collect::<Vec<TrackInRes>>(),
         })
         .collect::<Vec<ArtistWithTracks>>();
 

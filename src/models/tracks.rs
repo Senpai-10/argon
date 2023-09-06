@@ -5,6 +5,16 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct TrackInRes {
+    #[serde(flatten)]
+    pub track: Track,
+
+    pub artist: Option<Artist>,
+    pub album: Option<Album>,
+    pub features: Vec<Artist>,
+}
+
 #[derive(Identifiable, Queryable, Selectable, Associations, Debug, Serialize, Deserialize)]
 #[diesel(table_name = schema::tracks)]
 #[diesel(belongs_to(Artist, foreign_key = artist_id))]

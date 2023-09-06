@@ -10,6 +10,7 @@ pub enum Response<T> {
 pub mod albums;
 pub mod artists;
 pub mod scan;
+pub mod search;
 pub mod stats;
 pub mod stream;
 pub mod tracks;

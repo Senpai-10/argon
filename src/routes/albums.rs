@@ -1,25 +1,13 @@
 use super::Response;
 use crate::db;
+use crate::models::albums::AlbumWithTracks;
 use crate::models::features::Feature;
+use crate::models::tracks::TrackInRes;
 use crate::models::{albums::Album, artists::Artist, tracks::Track};
 use crate::schema;
 use diesel::prelude::*;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct TrackWithFeatures {
-    #[serde(flatten)]
-    track: Track,
-    features: Vec<Artist>,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct AlbumWithTracks {
-    #[serde(flatten)]
-    album: Album,
-    tracks: Vec<TrackWithFeatures>,
-}
 
 #[derive(Deserialize, Serialize)]
 pub struct Data {
@@ -67,18 +55,29 @@ pub fn albums(
         .into_iter()
         .zip(all_albums)
         .map(|(albums_tracks, album)| AlbumWithTracks {
-            album,
+            artist: schema::artists::table
+                .filter(schema::artists::id.eq(&album.artist_id))
+                .get_result::<Artist>(&mut conn)
+                .unwrap(),
             tracks: albums_tracks
                 .into_iter()
-                .map(|t| TrackWithFeatures {
+                .map(|t| TrackInRes {
+                    artist: Some(
+                        schema::artists::table
+                            .filter(schema::artists::id.eq(&album.artist_id))
+                            .get_result::<Artist>(&mut conn)
+                            .unwrap(),
+                    ),
                     features: Feature::belonging_to(&t)
                         .inner_join(schema::artists::table)
                         .select(Artist::as_select())
                         .load(&mut conn)
                         .unwrap(),
+                    album: Some(album.clone()),
                     track: t,
                 })
-                .collect::<Vec<TrackWithFeatures>>(),
+                .collect::<Vec<TrackInRes>>(),
+            album,
         })
         .collect::<Vec<AlbumWithTracks>>();
 
@@ -109,7 +108,14 @@ pub fn album(id: String) -> Json<Response<AlbumData>> {
         .load(&mut conn)
         .unwrap()
         .into_iter()
-        .map(|t| TrackWithFeatures {
+        .map(|t| TrackInRes {
+            artist: t.artist_id.as_ref().map(|artist_id| {
+                schema::artists::table
+                    .filter(schema::artists::id.eq(artist_id))
+                    .get_result(&mut conn)
+                    .unwrap()
+            }),
+            album: Some(album.clone()),
             features: Feature::belonging_to(&t)
                 .inner_join(schema::artists::table)
                 .select(Artist::as_select())
@@ -117,10 +123,14 @@ pub fn album(id: String) -> Json<Response<AlbumData>> {
                 .unwrap(),
             track: t,
         })
-        .collect::<Vec<TrackWithFeatures>>();
+        .collect::<Vec<TrackInRes>>();
 
     Json(Response::data(AlbumData {
         album: AlbumWithTracks {
+            artist: schema::artists::table
+                .filter(schema::artists::id.eq(&album.artist_id))
+                .get_result::<Artist>(&mut conn)
+                .unwrap(),
             album,
             tracks: album_tracks,
         },
