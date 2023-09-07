@@ -82,28 +82,34 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
 pub fn artist(id: String) -> Json<Response<ArtistData>> {
     let mut conn = db::establish_connection();
 
-    let artist = schema::artists::table
+    let artist: Artist = match schema::artists::table
         .filter(schema::artists::id.eq(id))
         .select(Artist::as_select())
         .get_result(&mut conn)
-        .unwrap();
+    {
+        Ok(v) => v,
+        Err(e) => return Json(Response::error { msg: e.to_string() }),
+    };
 
-    let tracks: Vec<TrackInRes> = Track::belonging_to(&artist)
+    let tracks: Vec<TrackInRes> = match Track::belonging_to(&artist)
         .left_join(schema::albums::table)
         .load::<(Track, Option<Album>)>(&mut conn)
-        .unwrap()
-        .into_iter()
-        .map(|(t, album)| TrackInRes {
-            artist: Some(artist.clone()),
-            album,
-            features: Feature::belonging_to(&t)
-                .inner_join(schema::artists::table)
-                .select(Artist::as_select())
-                .load(&mut conn)
-                .unwrap(),
-            track: t,
-        })
-        .collect::<Vec<TrackInRes>>();
+    {
+        Ok(v) => v
+            .into_iter()
+            .map(|(t, album)| TrackInRes {
+                artist: Some(artist.clone()),
+                album,
+                features: Feature::belonging_to(&t)
+                    .inner_join(schema::artists::table)
+                    .select(Artist::as_select())
+                    .load(&mut conn)
+                    .unwrap(),
+                track: t,
+            })
+            .collect::<Vec<TrackInRes>>(),
+        Err(e) => return Json(Response::error { msg: e.to_string() }),
+    };
 
     Json(Response::data(ArtistData {
         artist: ArtistWithTracks { artist, tracks },
