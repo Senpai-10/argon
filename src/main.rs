@@ -38,6 +38,7 @@ fn rocket() -> _ {
             routes::stream::stream,
             routes::tracks::track_cover,
             routes::artists::artists,
+            routes::artists::artist,
             routes::albums::albums,
             routes::albums::album,
             routes::stats::stats,

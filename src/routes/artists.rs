@@ -18,6 +18,11 @@ pub struct Data {
     total: i64,
 }
 
+#[derive(Deserialize, Serialize)]
+pub struct ArtistData {
+    artist: ArtistWithTracks,
+}
+
 #[get("/artists?<offset>&<limit>")]
 pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
     let mut conn = db::establish_connection();
@@ -70,5 +75,37 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
         offset,
         limit,
         total,
+    }))
+}
+
+#[get("/artists/<id>")]
+pub fn artist(id: String) -> Json<Response<ArtistData>> {
+    let mut conn = db::establish_connection();
+
+    let artist = schema::artists::table
+        .filter(schema::artists::id.eq(id))
+        .select(Artist::as_select())
+        .get_result(&mut conn)
+        .unwrap();
+
+    let tracks: Vec<TrackInRes> = Track::belonging_to(&artist)
+        .left_join(schema::albums::table)
+        .load::<(Track, Option<Album>)>(&mut conn)
+        .unwrap()
+        .into_iter()
+        .map(|(t, album)| TrackInRes {
+            artist: Some(artist.clone()),
+            album,
+            features: Feature::belonging_to(&t)
+                .inner_join(schema::artists::table)
+                .select(Artist::as_select())
+                .load(&mut conn)
+                .unwrap(),
+            track: t,
+        })
+        .collect::<Vec<TrackInRes>>();
+
+    Json(Response::data(ArtistData {
+        artist: ArtistWithTracks { artist, tracks },
     }))
 }
