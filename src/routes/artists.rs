@@ -33,9 +33,9 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
 
     let all_artists = query.select(Artist::as_select()).load(&mut conn).unwrap();
 
-    let tracks: Vec<(Track, Album)> = Track::belonging_to(&all_artists)
-        .inner_join(schema::albums::table)
-        .load::<(Track, Album)>(&mut conn)
+    let tracks: Vec<(Track, Option<Album>)> = Track::belonging_to(&all_artists)
+        .left_join(schema::albums::table)
+        .load::<(Track, Option<Album>)>(&mut conn)
         .unwrap();
 
     let artist_with_tracks = tracks
@@ -48,7 +48,7 @@ pub fn artists(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> 
                 .into_iter()
                 .map(|(t, album)| TrackInRes {
                     artist: Some(artist.clone()),
-                    album: Some(album),
+                    album,
                     features: Feature::belonging_to(&t)
                         .inner_join(schema::artists::table)
                         .select(Artist::as_select())
