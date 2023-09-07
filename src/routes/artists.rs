@@ -83,12 +83,17 @@ pub fn artist(id: String) -> Json<Response<ArtistData>> {
     let mut conn = db::establish_connection();
 
     let artist: Artist = match schema::artists::table
-        .filter(schema::artists::id.eq(id))
+        .filter(schema::artists::id.eq(&id))
         .select(Artist::as_select())
         .get_result(&mut conn)
     {
         Ok(v) => v,
-        Err(e) => return Json(Response::error { msg: e.to_string() }),
+        Err(e) => {
+            return Json(Response::error {
+                msg: e.to_string(),
+                detail: format!("Artist '{id}' not found!"),
+            })
+        }
     };
 
     let tracks: Vec<TrackInRes> = match Track::belonging_to(&artist)
@@ -108,7 +113,12 @@ pub fn artist(id: String) -> Json<Response<ArtistData>> {
                 track: t,
             })
             .collect::<Vec<TrackInRes>>(),
-        Err(e) => return Json(Response::error { msg: e.to_string() }),
+        Err(e) => {
+            return Json(Response::error {
+                msg: e.to_string(),
+                detail: format!("Failed to get tracks for artist '{id}'!"),
+            })
+        }
     };
 
     Json(Response::data(ArtistData {

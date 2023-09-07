@@ -23,7 +23,12 @@ pub fn stats() -> Json<Response<Stats>> {
         .load::<ScanInfo>(&mut conn)
     {
         Ok(v) => v,
-        Err(e) => return Json(Response::error { msg: e.to_string() }),
+        Err(e) => {
+            return Json(Response::error {
+                msg: e.to_string(),
+                detail: String::from("Failed to get scans info!"),
+            })
+        }
     };
 
     let artists = schema::artists::table

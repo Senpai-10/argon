@@ -45,7 +45,12 @@ pub async fn scan_route(clean: Option<bool>) -> Json<Response<Data>> {
 
     match scanner.start() {
         Ok(v) => data.scan_info = v,
-        Err(e) => return Json(Response::error { msg: e.to_string() }),
+        Err(e) => {
+            return Json(Response::error {
+                msg: e.to_string(),
+                detail: e.to_string(),
+            })
+        }
     }
 
     Json(Response::data(data))

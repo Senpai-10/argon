@@ -50,7 +50,12 @@ pub fn tracks(
 
     let tracks = match query.load::<Track>(&mut conn) {
         Ok(v) => v,
-        Err(e) => return Json(Response::error { msg: e.to_string() }),
+        Err(e) => {
+            return Json(Response::error {
+                msg: e.to_string(),
+                detail: String::from("Failed to get tracks"),
+            })
+        }
     };
 
     let total_tracks = schema::tracks::table
@@ -75,7 +80,12 @@ pub fn track(id: String) -> Json<Response<TrackData>> {
         .get_result::<Track>(&mut conn)
     {
         Ok(v) => v,
-        Err(e) => return Json(Response::error { msg: e.to_string() }),
+        Err(e) => {
+            return Json(Response::error {
+                msg: e.to_string(),
+                detail: format!("Failed to get track '{id}'"),
+            })
+        }
     };
 
     Json(Response::data(TrackData { track }))
