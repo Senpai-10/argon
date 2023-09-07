@@ -7,34 +7,35 @@ use rocket::response::status::NotFound;
 use std::path::Path;
 
 #[derive(Debug, PartialEq, Eq, FromFormField)]
+#[allow(non_camel_case_types)]
 pub enum PicType {
-    Other,
-    Icon,
-    OtherIcon,
-    CoverFront,
-    CoverBack,
-    Leaflet,
-    Media,
-    LeadArtist,
-    Artist,
-    Conductor,
-    Band,
-    Composer,
-    Lyricist,
-    RecordingLocation,
-    DuringRecording,
-    DuringPerformance,
-    ScreenCapture,
-    BrightFish,
-    Illustration,
-    BandLogo,
-    PublisherLogo,
+    other,
+    icon,
+    other_icon,
+    cover_front,
+    cover_back,
+    leaflet,
+    media,
+    lead_artist,
+    artist,
+    conductor,
+    band,
+    composer,
+    lyricist,
+    recording_location,
+    during_recording,
+    during_performance,
+    screen_capture,
+    bright_fish,
+    illustration,
+    band_logo,
+    publisher_logo,
 }
 
 #[get("/picture/<id>?<pic_type>")]
 pub fn picture(id: String, pic_type: Option<PicType>) -> Result<Vec<u8>, NotFound<String>> {
     let mut conn = db::establish_connection();
-    let pic_type = pic_type.unwrap_or(PicType::CoverFront);
+    let pic_type = pic_type.unwrap_or(PicType::cover_front);
 
     let track = match schema::tracks::table
         .filter(schema::tracks::id.eq(&id))
@@ -54,27 +55,29 @@ pub fn picture(id: String, pic_type: Option<PicType>) -> Result<Vec<u8>, NotFoun
 
     for pic in tag.pictures() {
         match (pic.picture_type, &pic_type) {
-            (PictureType::Other, PicType::Other)
-            | (PictureType::Icon, PicType::Icon)
-            | (PictureType::OtherIcon, PicType::OtherIcon)
-            | (PictureType::CoverFront, PicType::CoverFront)
-            | (PictureType::CoverBack, PicType::CoverBack)
-            | (PictureType::Leaflet, PicType::Leaflet)
-            | (PictureType::Media, PicType::Media)
-            | (PictureType::LeadArtist, PicType::LeadArtist)
-            | (PictureType::Artist, PicType::Artist)
-            | (PictureType::Conductor, PicType::Conductor)
-            | (PictureType::Band, PicType::Band)
-            | (PictureType::Composer, PicType::Composer)
-            | (PictureType::Lyricist, PicType::Lyricist)
-            | (PictureType::RecordingLocation, PicType::RecordingLocation)
-            | (PictureType::DuringRecording, PicType::DuringRecording)
-            | (PictureType::DuringPerformance, PicType::DuringPerformance)
-            | (PictureType::ScreenCapture, PicType::ScreenCapture)
-            | (PictureType::BrightFish, PicType::BrightFish)
-            | (PictureType::Illustration, PicType::Illustration)
-            | (PictureType::BandLogo, PicType::BandLogo)
-            | (PictureType::PublisherLogo, PicType::PublisherLogo) => return Ok(pic.data.to_vec()),
+            (PictureType::Other, PicType::other)
+            | (PictureType::Icon, PicType::icon)
+            | (PictureType::OtherIcon, PicType::other_icon)
+            | (PictureType::CoverFront, PicType::cover_front)
+            | (PictureType::CoverBack, PicType::cover_back)
+            | (PictureType::Leaflet, PicType::leaflet)
+            | (PictureType::Media, PicType::media)
+            | (PictureType::LeadArtist, PicType::lead_artist)
+            | (PictureType::Artist, PicType::artist)
+            | (PictureType::Conductor, PicType::conductor)
+            | (PictureType::Band, PicType::band)
+            | (PictureType::Composer, PicType::composer)
+            | (PictureType::Lyricist, PicType::lyricist)
+            | (PictureType::RecordingLocation, PicType::recording_location)
+            | (PictureType::DuringRecording, PicType::during_recording)
+            | (PictureType::DuringPerformance, PicType::during_performance)
+            | (PictureType::ScreenCapture, PicType::screen_capture)
+            | (PictureType::BrightFish, PicType::bright_fish)
+            | (PictureType::Illustration, PicType::illustration)
+            | (PictureType::BandLogo, PicType::band_logo)
+            | (PictureType::PublisherLogo, PicType::publisher_logo) => {
+                return Ok(pic.data.to_vec())
+            }
             _ => {}
         }
     }
