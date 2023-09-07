@@ -83,7 +83,7 @@ pub fn track(id: String) -> Json<Response<TrackData>> {
         Err(e) => {
             return Json(Response::error {
                 msg: e.to_string(),
-                detail: format!("Failed to get track '{id}'"),
+                detail: format!("Track '{id}' does not exists!"),
             })
         }
     };

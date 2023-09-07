@@ -91,7 +91,7 @@ pub fn artist(id: String) -> Json<Response<ArtistData>> {
         Err(e) => {
             return Json(Response::error {
                 msg: e.to_string(),
-                detail: format!("Artist '{id}' not found!"),
+                detail: format!("Artist '{id}' does not exists!"),
             })
         }
     };
