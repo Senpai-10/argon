@@ -36,5 +36,5 @@ pub fn stream<'a>(id: String) -> Result<SeekStream<'a>, NotFound<String>> {
         };
     }
 
-    Err(NotFound("Track file not found!".into()))
+    Err(NotFound("Track file does not exists!".into()))
 }

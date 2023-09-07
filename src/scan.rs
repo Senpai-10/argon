@@ -159,7 +159,7 @@ impl Scanner {
         };
 
         if !music_dir.exists() {
-            error!("Music dir not found! {}", music_dir.display());
+            error!("Music dir does not exists! {}", music_dir.display());
             return Ok(None);
         }
 
