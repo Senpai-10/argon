@@ -49,6 +49,15 @@ CREATE TABLE scan_info (
     tracks                  INT NOT NULL
 );
 
+CREATE TABLE users (
+    id                      TEXT PRIMARY KEY,
+    name                    TEXT NOT NULL,
+    password                TEXT NOT NULL,
+
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE OR REPLACE FUNCTION update_timestamp_column()
 RETURNS TRIGGER AS $$
 BEGIN
