@@ -47,6 +47,8 @@ fn rocket() -> _ {
             routes::search::search_artists,
             routes::search::search_tracks,
             routes::search::search_albums,
+            routes::auth::signup,
+            routes::auth::login,
         ],
     )
 }
