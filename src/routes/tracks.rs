@@ -1,14 +1,17 @@
 use super::Response;
-use crate::db;
+use crate::models::albums::Album;
+use crate::models::artists::Artist;
+use crate::models::features::Feature;
 use crate::models::tracks::Track;
 use crate::schema;
+use crate::{db, models::tracks::TrackInRes};
 use diesel::prelude::*;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct TracksData {
-    pub tracks: Vec<Track>,
+    pub tracks: Vec<TrackInRes>,
     pub offset: Option<i64>,
     pub limit: Option<i64>,
     pub total: i64,
@@ -16,7 +19,7 @@ pub struct TracksData {
 
 #[derive(Serialize, Deserialize)]
 pub struct TrackData {
-    pub track: Track,
+    pub track: TrackInRes,
 }
 
 #[get("/tracks?<offset>&<limit>")]
@@ -32,8 +35,30 @@ pub fn tracks(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksDa
         query = query.limit(limit);
     }
 
-    let tracks = match query.load::<Track>(&mut conn) {
-        Ok(v) => v,
+    let tracks: Vec<TrackInRes> = match query.load::<Track>(&mut conn) {
+        Ok(v) => v
+            .into_iter()
+            .map(|t| TrackInRes {
+                artist: t.artist_id.as_ref().map(|artist_id| {
+                    schema::artists::table
+                        .filter(schema::artists::id.eq(artist_id))
+                        .get_result::<Artist>(&mut conn)
+                        .unwrap()
+                }),
+                features: Feature::belonging_to(&t)
+                    .inner_join(schema::artists::table)
+                    .select(Artist::as_select())
+                    .load(&mut conn)
+                    .unwrap(),
+                album: t.album_id.as_ref().map(|album_id| {
+                    schema::albums::table
+                        .filter(schema::albums::id.eq(album_id))
+                        .get_result::<Album>(&mut conn)
+                        .unwrap()
+                }),
+                track: t,
+            })
+            .collect::<Vec<TrackInRes>>(),
         Err(e) => {
             return Json(Response::error {
                 msg: e.to_string(),
@@ -63,7 +88,26 @@ pub fn track(id: String) -> Json<Response<TrackData>> {
         .filter(schema::tracks::id.eq(&id))
         .get_result::<Track>(&mut conn)
     {
-        Ok(v) => v,
+        Ok(t) => TrackInRes {
+            artist: t.artist_id.as_ref().map(|artist_id| {
+                schema::artists::table
+                    .filter(schema::artists::id.eq(artist_id))
+                    .get_result::<Artist>(&mut conn)
+                    .unwrap()
+            }),
+            features: Feature::belonging_to(&t)
+                .inner_join(schema::artists::table)
+                .select(Artist::as_select())
+                .load(&mut conn)
+                .unwrap(),
+            album: t.album_id.as_ref().map(|album_id| {
+                schema::albums::table
+                    .filter(schema::albums::id.eq(album_id))
+                    .get_result::<Album>(&mut conn)
+                    .unwrap()
+            }),
+            track: t,
+        },
         Err(e) => {
             return Json(Response::error {
                 msg: e.to_string(),
