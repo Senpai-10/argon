@@ -102,3 +102,6 @@ CREATE TRIGGER update_features
     BEFORE UPDATE ON features
         FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
 
+CREATE TRIGGER update_users
+    BEFORE UPDATE ON users
+        FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
