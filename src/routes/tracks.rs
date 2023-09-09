@@ -19,23 +19,10 @@ pub struct TrackData {
     pub track: Track,
 }
 
-#[get("/tracks?<artist>&<album>&<offset>&<limit>")]
-pub fn tracks(
-    artist: Option<String>,
-    album: Option<String>,
-    offset: Option<i64>,
-    limit: Option<i64>,
-) -> Json<Response<TracksData>> {
+#[get("/tracks?<offset>&<limit>")]
+pub fn tracks(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksData>> {
     let mut conn = db::establish_connection();
     let mut query = schema::tracks::table.into_boxed();
-
-    if let Some(artist) = artist {
-        query = query.filter(schema::tracks::artist_id.eq(artist))
-    }
-
-    if let Some(album) = album {
-        query = query.filter(schema::tracks::album_id.eq(album))
-    }
 
     if let Some(offset) = offset {
         query = query.offset(offset);
