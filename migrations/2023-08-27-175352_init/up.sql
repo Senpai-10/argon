@@ -58,6 +58,14 @@ CREATE TABLE users (
     updated_at              TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE sessions (
+    id                      TEXT PRIMARY KEY,
+    user_id                 TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW(),
+    expires_at              TIMESTAMP NOT NULL
+);
+
 CREATE OR REPLACE FUNCTION update_timestamp_column()
 RETURNS TRIGGER AS $$
 BEGIN
