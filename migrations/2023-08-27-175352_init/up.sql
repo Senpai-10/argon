@@ -66,6 +66,14 @@ CREATE TABLE sessions (
     expires_at              TIMESTAMP NOT NULL
 );
 
+CREATE TABLE favorites (
+    id                      TEXT PRIMARY KEY,
+    user_id                 TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id                TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE OR REPLACE FUNCTION update_timestamp_column()
 RETURNS TRIGGER AS $$
 BEGIN
