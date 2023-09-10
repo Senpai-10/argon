@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rocket;
 
+mod auth;
 mod db;
 mod models;
 mod routes;
@@ -47,6 +48,9 @@ fn rocket() -> _ {
             routes::search::search_artists,
             routes::search::search_tracks,
             routes::search::search_albums,
+            routes::favorites::favorites,
+            routes::favorites::favorite_add,
+            routes::favorites::favorite_remove,
             routes::auth::signup,
             routes::auth::login,
         ],

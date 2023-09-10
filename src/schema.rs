@@ -20,6 +20,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    favorites (id) {
+        id -> Text,
+        user_id -> Text,
+        track_id -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     features (id) {
         id -> Text,
         artist_id -> Text,
@@ -77,6 +86,8 @@ diesel::table! {
 }
 
 diesel::joinable!(albums -> artists (artist_id));
+diesel::joinable!(favorites -> tracks (track_id));
+diesel::joinable!(favorites -> users (user_id));
 diesel::joinable!(features -> artists (artist_id));
 diesel::joinable!(features -> tracks (track_id));
 diesel::joinable!(sessions -> users (user_id));
@@ -86,6 +97,7 @@ diesel::joinable!(tracks -> artists (artist_id));
 diesel::allow_tables_to_appear_in_same_query!(
     albums,
     artists,
+    favorites,
     features,
     scan_info,
     sessions,
