@@ -1,10 +1,16 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Serialize)]
+pub struct ResError {
+    pub msg: String,
+    pub detail: String,
+}
+
 #[allow(non_camel_case_types)]
 #[derive(Deserialize, Serialize)]
 pub enum Response<T> {
     data(T),
-    error { msg: String, detail: String },
+    error(ResError),
 }
 
 pub mod albums;

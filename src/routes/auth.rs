@@ -1,4 +1,4 @@
-use super::Response;
+use super::{ResError, Response};
 use crate::db;
 use crate::models::sessions::NewSession;
 use crate::models::users::{NewUser, User};
@@ -52,10 +52,10 @@ pub fn signup(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
     .get_result::<bool>(&mut conn)
     .unwrap()
     {
-        return Json(Response::error {
+        return Json(Response::error(ResError {
             msg: "Failed to signup".into(),
             detail: "Username already exists".into(),
-        });
+        }));
     };
 
     let hash = bcrypt::hash(user_creds.password.clone()).unwrap();
@@ -75,10 +75,10 @@ pub fn signup(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
 
             Json(Response::data(Data { session_id }))
         }
-        Err(e) => Json(Response::error {
+        Err(e) => Json(Response::error(ResError {
             msg: e.to_string(),
             detail: "Failed to create user".into(),
-        }),
+        })),
     }
 }
 
@@ -92,10 +92,10 @@ pub fn login(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
     .get_result::<bool>(&mut conn)
     .unwrap()
     {
-        return Json(Response::error {
+        return Json(Response::error(ResError {
             msg: "Failed to login".into(),
             detail: "User does not exists".into(),
-        });
+        }));
     };
 
     if let Ok(user) = schema::users::table
@@ -103,10 +103,10 @@ pub fn login(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
         .get_result::<User>(&mut conn)
     {
         if !bcrypt::verify(user_creds.password.clone(), &user.password) {
-            return Json(Response::error {
+            return Json(Response::error(ResError {
                 msg: "Failed to login".into(),
                 detail: "Incorrect password".into(),
-            });
+            }));
         }
 
         let session_id = create_session(&mut conn, user.id);
@@ -114,8 +114,8 @@ pub fn login(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
         return Json(Response::data(Data { session_id }));
     }
 
-    Json(Response::error {
+    Json(Response::error(ResError {
         msg: "Failed to login".into(),
         detail: "user does not exists".into(),
-    })
+    }))
 }

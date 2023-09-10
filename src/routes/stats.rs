@@ -1,4 +1,4 @@
-use super::Response;
+use super::{ResError, Response};
 use crate::db;
 use crate::models::scan_info::ScanInfo;
 use crate::schema;
@@ -24,10 +24,10 @@ pub fn stats() -> Json<Response<Stats>> {
     {
         Ok(v) => v,
         Err(e) => {
-            return Json(Response::error {
+            return Json(Response::error(ResError {
                 msg: e.to_string(),
                 detail: String::from("Failed to get scans info!"),
-            })
+            }))
         }
     };
 

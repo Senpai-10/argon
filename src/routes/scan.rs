@@ -1,4 +1,4 @@
-use super::Response;
+use super::{ResError, Response};
 use crate::db;
 use crate::models::scan_info::ScanInfo;
 use crate::schema;
@@ -46,10 +46,10 @@ pub async fn scan_route(clean: Option<bool>) -> Json<Response<Data>> {
     match scanner.start() {
         Ok(v) => data.scan_info = v,
         Err(e) => {
-            return Json(Response::error {
+            return Json(Response::error(ResError {
                 msg: e.to_string(),
                 detail: e.to_string(),
-            })
+            }))
         }
     }
 
