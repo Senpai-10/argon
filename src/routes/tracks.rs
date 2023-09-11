@@ -1,4 +1,4 @@
-use super::Response;
+use super::{ResError, Response};
 use crate::models::albums::Album;
 use crate::models::artists::Artist;
 use crate::models::features::Feature;
@@ -60,10 +60,10 @@ pub fn tracks(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksDa
             })
             .collect::<Vec<TrackInRes>>(),
         Err(e) => {
-            return Json(Response::error {
+            return Json(Response::error(ResError {
                 msg: e.to_string(),
                 detail: String::from("Failed to get tracks"),
-            })
+            }))
         }
     };
 
@@ -109,10 +109,10 @@ pub fn track(id: String) -> Json<Response<TrackData>> {
             track: t,
         },
         Err(e) => {
-            return Json(Response::error {
+            return Json(Response::error(ResError {
                 msg: e.to_string(),
                 detail: format!("Track '{id}' does not exists!"),
-            })
+            }))
         }
     };
 

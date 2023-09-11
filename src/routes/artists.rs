@@ -1,4 +1,4 @@
-use super::Response;
+use super::{ResError, Response};
 use crate::db;
 use crate::models::albums::Album;
 use crate::models::artists::ArtistWithTracks;
@@ -89,10 +89,10 @@ pub fn artist(id: String) -> Json<Response<ArtistData>> {
     {
         Ok(v) => v,
         Err(e) => {
-            return Json(Response::error {
+            return Json(Response::error(ResError {
                 msg: e.to_string(),
                 detail: format!("Artist '{id}' does not exists!"),
-            })
+            }))
         }
     };
 
@@ -114,10 +114,10 @@ pub fn artist(id: String) -> Json<Response<ArtistData>> {
             })
             .collect::<Vec<TrackInRes>>(),
         Err(e) => {
-            return Json(Response::error {
+            return Json(Response::error(ResError {
                 msg: e.to_string(),
                 detail: format!("Failed to get tracks for artist '{id}'!"),
-            })
+            }))
         }
     };
 

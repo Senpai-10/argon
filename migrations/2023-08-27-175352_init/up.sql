@@ -49,6 +49,31 @@ CREATE TABLE scan_info (
     tracks                  INT NOT NULL
 );
 
+CREATE TABLE users (
+    id                      TEXT PRIMARY KEY,
+    name                    TEXT NOT NULL,
+    password                TEXT NOT NULL,
+
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE sessions (
+    id                      TEXT PRIMARY KEY,
+    user_id                 TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW(),
+    expires_at              TIMESTAMP NOT NULL
+);
+
+CREATE TABLE favorites (
+    id                      TEXT PRIMARY KEY,
+    user_id                 TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    track_id                TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE OR REPLACE FUNCTION update_timestamp_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -85,3 +110,6 @@ CREATE TRIGGER update_features
     BEFORE UPDATE ON features
         FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
 
+CREATE TRIGGER update_users
+    BEFORE UPDATE ON users
+        FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
