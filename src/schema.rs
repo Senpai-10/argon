@@ -39,6 +39,27 @@ diesel::table! {
 }
 
 diesel::table! {
+    playlists (id) {
+        id -> Text,
+        user_id -> Text,
+        name -> Text,
+        description -> Nullable<Text>,
+        is_public -> Bool,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    playlists_tracks (id) {
+        id -> Text,
+        playlist_id -> Text,
+        track_id -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     scan_info (id) {
         id -> Int4,
         scan_start -> Timestamp,
@@ -90,6 +111,9 @@ diesel::joinable!(favorites -> tracks (track_id));
 diesel::joinable!(favorites -> users (user_id));
 diesel::joinable!(features -> artists (artist_id));
 diesel::joinable!(features -> tracks (track_id));
+diesel::joinable!(playlists -> users (user_id));
+diesel::joinable!(playlists_tracks -> playlists (playlist_id));
+diesel::joinable!(playlists_tracks -> tracks (track_id));
 diesel::joinable!(sessions -> users (user_id));
 diesel::joinable!(tracks -> albums (album_id));
 diesel::joinable!(tracks -> artists (artist_id));
@@ -99,6 +123,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     artists,
     favorites,
     features,
+    playlists,
+    playlists_tracks,
     scan_info,
     sessions,
     tracks,

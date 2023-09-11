@@ -8,6 +8,8 @@ DROP TABLE scan_info CASCADE;
 DROP TABLE users CASCADE;
 DROP TABLE sessions CASCADE;
 DROP TABLE favorites CASCADE;
+DROP TABLE playlists CASCADE;
+DROP TABLE playlists_tracks CASCADE;
 
 DROP FUNCTION update_timestamp_column CASCADE;
 DROP FUNCTION tracks_on_update CASCADE;

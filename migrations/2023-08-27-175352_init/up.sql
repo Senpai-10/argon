@@ -74,6 +74,25 @@ CREATE TABLE favorites (
     created_at              TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE playlists (
+    id                      TEXT PRIMARY KEY,
+    user_id                 TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name                    TEXT NOT NULL,
+    description             TEXT,
+    is_public               BOOLEAN NOT NULL,
+
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE playlists_tracks (
+    id                      TEXT PRIMARY KEY,
+    playlist_id             TEXT NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    track_id                TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+
+    created_at              TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE OR REPLACE FUNCTION update_timestamp_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -113,3 +132,8 @@ CREATE TRIGGER update_features
 CREATE TRIGGER update_users
     BEFORE UPDATE ON users
         FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
+
+CREATE TRIGGER update_playlists
+    BEFORE UPDATE ON playlists
+        FOR EACH ROW EXECUTE PROCEDURE update_timestamp_column();
+
