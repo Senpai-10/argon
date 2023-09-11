@@ -53,6 +53,7 @@ fn rocket() -> _ {
             routes::favorites::favorite_remove,
             routes::auth::signup,
             routes::auth::login,
+            routes::auth::logout,
         ],
     )
 }

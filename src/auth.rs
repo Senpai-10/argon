@@ -9,8 +9,9 @@ use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
 
 #[derive(Debug)]
-pub struct Authorization {
+pub struct Authorization<'r> {
     pub user: User,
+    pub session_id: &'r str,
 }
 
 #[derive(Debug)]
@@ -20,7 +21,7 @@ pub enum AuthorizationError {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for Authorization {
+impl<'r> FromRequest<'r> for Authorization<'r> {
     type Error = AuthorizationError;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
@@ -42,7 +43,10 @@ impl<'r> FromRequest<'r> for Authorization {
                     .get_result::<User>(&mut conn)
                     .unwrap();
 
-                Outcome::Success(Authorization { user })
+                Outcome::Success(Authorization {
+                    user,
+                    session_id: key,
+                })
             }
             Some(_) => Outcome::Failure((Status::BadRequest, AuthorizationError::Invalid)),
         }
