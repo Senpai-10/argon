@@ -1,6 +1,7 @@
 mod all_playlists;
 mod new_playlist;
 mod new_playlist_track;
+mod one_playlist;
 mod remove_playlist;
 mod remove_playlist_track;
 mod update_playlist;
@@ -23,6 +24,7 @@ pub struct TrackData {
 pub fn routes() -> Vec<rocket::Route> {
     routes![
         all_playlists::all_playlists,
+        one_playlist::one_playlist,
         new_playlist::new_playlist,
         remove_playlist::remove_playlist,
         new_playlist_track::new_playlist_track,
