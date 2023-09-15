@@ -31,34 +31,5 @@ fn rocket() -> _ {
         }
     }
 
-    rocket::build().mount(
-        "/api/",
-        routes![
-            routes::tracks::tracks,
-            routes::tracks::track,
-            routes::stream::stream,
-            routes::picture::picture,
-            routes::artists::artists,
-            routes::artists::artist,
-            routes::albums::albums,
-            routes::albums::album,
-            routes::stats::stats,
-            routes::scan::scan_route,
-            routes::search::search,
-            routes::search::search_artists,
-            routes::search::search_tracks,
-            routes::search::search_albums,
-            routes::favorites::favorites,
-            routes::favorites::favorite_add,
-            routes::favorites::favorite_remove,
-            routes::auth::signup,
-            routes::auth::login,
-            routes::auth::logout,
-            routes::playlists::playlists,
-            routes::playlists::playlists_remove,
-            routes::playlists::playlists_new,
-            routes::playlists::playlists_new_track,
-            routes::playlists::playlists_remove_track,
-        ],
-    )
+    rocket::build().mount("/api/", routes::routes())
 }
