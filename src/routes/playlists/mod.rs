@@ -3,6 +3,7 @@ mod new_playlist;
 mod new_playlist_track;
 mod remove_playlist;
 mod remove_playlist_track;
+mod update_playlist;
 
 use super::{ResError, Response};
 use crate::models::playlists::Playlist;
@@ -25,6 +26,7 @@ pub fn routes() -> Vec<rocket::Route> {
         new_playlist::new_playlist,
         remove_playlist::remove_playlist,
         new_playlist_track::new_playlist_track,
+        update_playlist::update_playlist,
         remove_playlist_track::remove_playlist_track,
     ]
 }
