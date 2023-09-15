@@ -1,8 +1,17 @@
+use crate::models::tracks::TrackInRes;
 use crate::models::users::User;
 use crate::schema;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize, Serialize)]
+pub struct PlaylistInRes {
+    #[serde(flatten)]
+    pub playlist: Playlist,
+
+    pub tracks: Vec<TrackInRes>,
+}
 
 #[derive(
     Queryable, Selectable, Identifiable, Associations, Debug, Serialize, Deserialize, Clone,

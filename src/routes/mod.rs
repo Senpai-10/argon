@@ -18,6 +18,7 @@ pub mod artists;
 pub mod auth;
 pub mod favorites;
 pub mod picture;
+pub mod playlists;
 pub mod scan;
 pub mod search;
 pub mod stats;

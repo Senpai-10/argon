@@ -54,6 +54,11 @@ fn rocket() -> _ {
             routes::auth::signup,
             routes::auth::login,
             routes::auth::logout,
+            routes::playlists::playlists,
+            routes::playlists::playlists_remove,
+            routes::playlists::playlists_new,
+            routes::playlists::playlists_new_track,
+            routes::playlists::playlists_remove_track,
         ],
     )
 }
