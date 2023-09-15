@@ -2,6 +2,8 @@ pub mod albums;
 pub mod artists;
 pub mod favorites;
 pub mod features;
+pub mod playlists;
+pub mod playlists_tracks;
 pub mod scan_info;
 pub mod sessions;
 pub mod tracks;
