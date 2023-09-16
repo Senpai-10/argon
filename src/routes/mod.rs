@@ -44,11 +44,9 @@ pub fn routes() -> Vec<rocket::Route> {
         favorites::favorites,
         favorites::favorite_add,
         favorites::favorite_remove,
-        auth::signup,
-        auth::login,
-        auth::logout,
     ];
 
+    api_routes.append(&mut auth::routes());
     api_routes.append(&mut playlists::routes());
 
     api_routes
