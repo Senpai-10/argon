@@ -12,9 +12,5 @@ pub struct FavData {
 }
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![
-        all_favorites::all_favorites,
-        new_favorite::new_favorite,
-        remove_favorite::remove_favorite,
-    ]
+    routes![all_favorites::rt, new_favorite::rt, remove_favorite::rt,]
 }

@@ -7,7 +7,7 @@ use rocket_seek_stream::SeekStream;
 use std::path::Path;
 
 #[get("/stream/<id>")]
-pub fn stream<'a>(id: String) -> Result<SeekStream<'a>, NotFound<String>> {
+pub fn rt<'a>(id: String) -> Result<SeekStream<'a>, NotFound<String>> {
     let mut conn = db::establish_connection();
 
     let track: Track = match schema::tracks::table

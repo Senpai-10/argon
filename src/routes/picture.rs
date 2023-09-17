@@ -33,7 +33,7 @@ pub enum PicType {
 }
 
 #[get("/picture/<id>?<pic_type>")]
-pub fn picture(id: String, pic_type: Option<PicType>) -> Result<Vec<u8>, NotFound<String>> {
+pub fn rt(id: String, pic_type: Option<PicType>) -> Result<Vec<u8>, NotFound<String>> {
     let mut conn = db::establish_connection();
     let pic_type = pic_type.unwrap_or(PicType::cover_front);
 

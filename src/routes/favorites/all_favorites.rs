@@ -19,11 +19,7 @@ pub struct Data {
 }
 
 #[get("/favorites?<offset>&<limit>")]
-pub fn all_favorites(
-    auth: Authorization,
-    offset: Option<i64>,
-    limit: Option<i64>,
-) -> Json<Response<Data>> {
+pub fn rt(auth: Authorization, offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
     let mut conn = db::establish_connection();
     let mut query = schema::favorites::table.into_boxed();
 

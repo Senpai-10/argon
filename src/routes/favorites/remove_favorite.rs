@@ -10,7 +10,7 @@ use diesel::prelude::*;
 use rocket::serde::json::Json;
 
 #[delete("/favorites/<track_id>")]
-pub fn remove_favorite(auth: Authorization, track_id: String) -> Json<Response<FavData>> {
+pub fn rt(auth: Authorization, track_id: String) -> Json<Response<FavData>> {
     let mut conn = db::establish_connection();
 
     match diesel::delete(

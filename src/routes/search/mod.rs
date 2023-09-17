@@ -185,9 +185,9 @@ pub fn get_albums(
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![
-        search_all::search_all,
-        search_artists::search_artists,
-        search_tracks::search_tracks,
-        search_albums::search_albums,
+        search_all::rt,
+        search_artists::rt,
+        search_tracks::rt,
+        search_albums::rt,
     ]
 }

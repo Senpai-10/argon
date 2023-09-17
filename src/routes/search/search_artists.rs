@@ -3,7 +3,7 @@ use crate::db;
 use rocket::serde::json::Json;
 
 #[get("/search/artists?<q>&<offset>&<limit>")]
-pub async fn search_artists(
+pub async fn rt(
     q: String,
     offset: Option<i64>,
     limit: Option<i64>,

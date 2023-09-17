@@ -15,7 +15,7 @@ pub struct AlbumData {
 }
 
 #[get("/albums/<id>")]
-pub fn one_album(id: String) -> Json<Response<AlbumData>> {
+pub fn rt(id: String) -> Json<Response<AlbumData>> {
     let mut conn = db::establish_connection();
 
     let album = schema::albums::table

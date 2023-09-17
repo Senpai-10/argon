@@ -14,7 +14,7 @@ pub struct Data {
 }
 
 #[get("/scan?<clean>")]
-pub async fn scan_route(clean: Option<bool>) -> Json<Response<Data>> {
+pub async fn rt(clean: Option<bool>) -> Json<Response<Data>> {
     let mut conn = db::establish_connection();
 
     if let Some(true) = clean {

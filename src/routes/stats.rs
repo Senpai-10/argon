@@ -15,7 +15,7 @@ pub struct Stats {
 }
 
 #[get("/stats")]
-pub fn stats() -> Json<Response<Stats>> {
+pub fn rt() -> Json<Response<Stats>> {
     let mut conn = db::establish_connection();
 
     let scans = match schema::scan_info::table

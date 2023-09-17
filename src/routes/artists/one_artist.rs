@@ -16,7 +16,7 @@ pub struct ArtistData {
 }
 
 #[get("/artists/<id>")]
-pub fn one_artist(id: String) -> Json<Response<ArtistData>> {
+pub fn rt(id: String) -> Json<Response<ArtistData>> {
     let mut conn = db::establish_connection();
 
     let artist: Artist = match schema::artists::table

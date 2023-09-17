@@ -9,7 +9,7 @@ use rocket::form::Form;
 use rocket::serde::json::Json;
 
 #[post("/login", data = "<user_creds>")]
-pub fn login(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
+pub fn rt(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
     let mut conn = db::establish_connection();
 
     if !select(exists(

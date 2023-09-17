@@ -42,5 +42,5 @@ pub fn create_session(conn: &mut PgConnection, user_id: String) -> String {
 }
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![login::login, logout::logout, signup::signup]
+    routes![login::rt, logout::rt, signup::rt]
 }

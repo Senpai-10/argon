@@ -12,7 +12,7 @@ use nanoid::nanoid;
 use rocket::serde::json::Json;
 
 #[post("/favorites/<track_id>")]
-pub fn new_favorite(auth: Authorization, track_id: String) -> Json<Response<FavData>> {
+pub fn rt(auth: Authorization, track_id: String) -> Json<Response<FavData>> {
     let mut conn = db::establish_connection();
 
     if let Ok(track) = schema::tracks::table

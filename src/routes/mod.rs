@@ -26,12 +26,7 @@ mod stream;
 mod tracks;
 
 pub fn routes() -> Vec<rocket::Route> {
-    let mut api_routes = routes![
-        stream::stream,
-        picture::picture,
-        stats::stats,
-        scan::scan_route,
-    ];
+    let mut api_routes = routes![stream::rt, picture::rt, stats::rt, scan::rt];
 
     api_routes.append(&mut auth::routes());
     api_routes.append(&mut playlists::routes());

@@ -18,7 +18,7 @@ pub struct TracksData {
 }
 
 #[get("/tracks?<offset>&<limit>")]
-pub fn tracks(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksData>> {
+pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksData>> {
     let mut conn = db::establish_connection();
     let mut query = schema::tracks::table.into_boxed();
 

@@ -15,7 +15,7 @@ pub struct TrackData {
 }
 
 #[get("/tracks/<id>")]
-pub fn one_track(id: String) -> Json<Response<TrackData>> {
+pub fn rt(id: String) -> Json<Response<TrackData>> {
     let mut conn = db::establish_connection();
 
     let track = match schema::tracks::table
