@@ -49,7 +49,7 @@ pub fn rt() -> Json<Response<Stats>> {
     };
 
     if let Some(last_scan) = scans.last() {
-        stats.last_scan = Some(*last_scan);
+        stats.last_scan = Some(last_scan.clone());
     }
 
     Json(Response::data(stats))
