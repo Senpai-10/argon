@@ -1,19 +1,16 @@
-use super::{create_session, Data, ResError, Response, UserCreds};
-use crate::db;
+use super::{create_session, Data, UserCreds};
 use crate::models::users::User;
-use crate::schema;
+use crate::routes::prelude::*;
 use diesel::dsl::{exists, select};
-use diesel::prelude::*;
 use pwhash::bcrypt;
 use rocket::form::Form;
-use rocket::serde::json::Json;
 
 #[post("/login", data = "<user_creds>")]
 pub fn rt(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
     if !select(exists(
-        schema::users::table.filter(schema::users::name.eq(&user_creds.username)),
+        users::table.filter(users::name.eq(&user_creds.username)),
     ))
     .get_result::<bool>(&mut conn)
     .unwrap()
@@ -24,8 +21,8 @@ pub fn rt(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
         }));
     };
 
-    if let Ok(user) = schema::users::table
-        .filter(schema::users::name.eq(&user_creds.username))
+    if let Ok(user) = users::table
+        .filter(users::name.eq(&user_creds.username))
         .get_result::<User>(&mut conn)
     {
         if !bcrypt::verify(user_creds.password.clone(), &user.password) {

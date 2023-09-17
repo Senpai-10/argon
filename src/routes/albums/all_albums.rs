@@ -1,13 +1,8 @@
-use super::Response;
-use crate::db;
 use crate::models::albums::AlbumWithTracks;
 use crate::models::features::Feature;
 use crate::models::tracks::TrackInRes;
 use crate::models::{albums::Album, artists::Artist, tracks::Track};
-use crate::schema;
-use diesel::prelude::*;
-use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
+use crate::routes::prelude::*;
 
 #[derive(Deserialize, Serialize)]
 pub struct Data {
@@ -19,11 +14,11 @@ pub struct Data {
 
 #[get("/albums?<artist>&<offset>&<limit>")]
 pub fn rt(artist: Option<String>, offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
-    let mut conn = db::establish_connection();
-    let mut query = schema::albums::table.into_boxed();
+    let mut conn = establish_connection();
+    let mut query = albums::table.into_boxed();
 
     if let Some(artist) = artist {
-        query = query.filter(schema::albums::artist_id.eq(artist));
+        query = query.filter(albums::artist_id.eq(artist));
     }
 
     if let Some(offset) = offset {
@@ -46,21 +41,21 @@ pub fn rt(artist: Option<String>, offset: Option<i64>, limit: Option<i64>) -> Js
         .into_iter()
         .zip(all_albums)
         .map(|(albums_tracks, album)| AlbumWithTracks {
-            artist: schema::artists::table
-                .filter(schema::artists::id.eq(&album.artist_id))
+            artist: artists::table
+                .filter(artists::id.eq(&album.artist_id))
                 .get_result::<Artist>(&mut conn)
                 .unwrap(),
             tracks: albums_tracks
                 .into_iter()
                 .map(|t| TrackInRes {
                     artist: Some(
-                        schema::artists::table
-                            .filter(schema::artists::id.eq(&album.artist_id))
+                        artists::table
+                            .filter(artists::id.eq(&album.artist_id))
                             .get_result::<Artist>(&mut conn)
                             .unwrap(),
                     ),
                     features: Feature::belonging_to(&t)
-                        .inner_join(schema::artists::table)
+                        .inner_join(artists::table)
                         .select(Artist::as_select())
                         .load(&mut conn)
                         .unwrap(),
@@ -72,10 +67,7 @@ pub fn rt(artist: Option<String>, offset: Option<i64>, limit: Option<i64>) -> Js
         })
         .collect::<Vec<AlbumWithTracks>>();
 
-    let total = schema::albums::table
-        .count()
-        .get_result::<i64>(&mut conn)
-        .unwrap();
+    let total = albums::table.count().get_result::<i64>(&mut conn).unwrap();
 
     Json(Response::data(Data {
         albums: albums_with_tracks,

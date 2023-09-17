@@ -13,6 +13,16 @@ pub enum Response<T> {
     error(ResError),
 }
 
+pub mod prelude {
+    pub use crate::auth::Authorization;
+    pub use crate::db::establish_connection;
+    pub use crate::routes::{ResError, Response};
+    pub use crate::schema::*;
+    pub use diesel::prelude::*;
+    pub use rocket::serde::json::Json;
+    pub use serde::{Deserialize, Serialize};
+}
+
 mod albums;
 mod artists;
 mod auth;

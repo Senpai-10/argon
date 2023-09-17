@@ -1,7 +1,5 @@
-use crate::db;
 use crate::models::tracks::Track;
-use crate::schema;
-use diesel::prelude::*;
+use crate::routes::prelude::*;
 use id3::frame::PictureType;
 use rocket::response::status::NotFound;
 use std::path::Path;
@@ -34,11 +32,11 @@ pub enum PicType {
 
 #[get("/picture/<id>?<pic_type>")]
 pub fn rt(id: String, pic_type: Option<PicType>) -> Result<Vec<u8>, NotFound<String>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
     let pic_type = pic_type.unwrap_or(PicType::cover_front);
 
-    let track = match schema::tracks::table
-        .filter(schema::tracks::id.eq(&id))
+    let track = match tracks::table
+        .filter(tracks::id.eq(&id))
         .get_result::<Track>(&mut conn)
     {
         Ok(v) => v,

@@ -2,8 +2,6 @@ mod login;
 mod logout;
 mod signup;
 
-use super::{ResError, Response};
-
 use crate::models::sessions::NewSession;
 use crate::schema;
 use chrono::Utc;

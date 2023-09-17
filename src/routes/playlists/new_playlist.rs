@@ -1,13 +1,7 @@
 use super::PlaylistData;
-use super::{ResError, Response};
-use crate::auth::Authorization;
-use crate::db;
 use crate::models::playlists::{NewPlaylist, Playlist};
-use crate::schema;
-use diesel::prelude::*;
+use crate::routes::prelude::*;
 use nanoid::nanoid;
-use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, FromForm)]
 pub struct NewPlaylistBody {
@@ -21,7 +15,7 @@ pub fn new_playlist(
     auth: Authorization,
     playlist_form: Json<NewPlaylistBody>,
 ) -> Json<Response<PlaylistData>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
     let new_playlist = NewPlaylist {
         id: nanoid!(),
@@ -31,7 +25,7 @@ pub fn new_playlist(
         is_public: playlist_form.is_public,
     };
 
-    match diesel::insert_into(schema::playlists::table)
+    match diesel::insert_into(playlists::table)
         .values(new_playlist)
         .get_result::<Playlist>(&mut conn)
     {

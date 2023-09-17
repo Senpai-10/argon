@@ -1,10 +1,5 @@
-use super::{ResError, Response};
-use crate::db;
 use crate::models::scan_info::ScanInfo;
-use crate::schema;
-use diesel::prelude::*;
-use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
+use crate::routes::prelude::*;
 
 use crate::scan::Scanner;
 
@@ -15,25 +10,25 @@ pub struct Data {
 
 #[get("/scan?<clean>")]
 pub async fn rt(clean: Option<bool>) -> Json<Response<Data>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
     if let Some(true) = clean {
-        match diesel::delete(schema::artists::table).execute(&mut conn) {
+        match diesel::delete(artists::table).execute(&mut conn) {
             Ok(v) => info!("Removed {v} artist!"),
             Err(e) => error!("Failed to clear artists table! {e}"),
         };
 
-        match diesel::delete(schema::albums::table).execute(&mut conn) {
+        match diesel::delete(albums::table).execute(&mut conn) {
             Ok(v) => info!("Removed {v} album!"),
             Err(e) => error!("Failed to clear albums table! {e}"),
         };
 
-        match diesel::delete(schema::features::table).execute(&mut conn) {
+        match diesel::delete(features::table).execute(&mut conn) {
             Ok(v) => info!("Removed {v} feature!"),
             Err(e) => error!("Failed to clear features table! {e}"),
         }
 
-        match diesel::delete(schema::tracks::table).execute(&mut conn) {
+        match diesel::delete(tracks::table).execute(&mut conn) {
             Ok(v) => info!("Removed {v} track!"),
             Err(e) => error!("Failed to clear tracks table! {e}"),
         };

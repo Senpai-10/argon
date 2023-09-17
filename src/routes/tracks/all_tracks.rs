@@ -1,13 +1,9 @@
-use super::{ResError, Response};
 use crate::models::albums::Album;
 use crate::models::artists::Artist;
 use crate::models::features::Feature;
 use crate::models::tracks::Track;
-use crate::schema;
-use crate::{db, models::tracks::TrackInRes};
-use diesel::prelude::*;
-use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
+use crate::models::tracks::TrackInRes;
+use crate::routes::prelude::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct TracksData {
@@ -19,8 +15,8 @@ pub struct TracksData {
 
 #[get("/tracks?<offset>&<limit>")]
 pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksData>> {
-    let mut conn = db::establish_connection();
-    let mut query = schema::tracks::table.into_boxed();
+    let mut conn = establish_connection();
+    let mut query = tracks::table.into_boxed();
 
     if let Some(offset) = offset {
         query = query.offset(offset);
@@ -35,19 +31,19 @@ pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksData>>
             .into_iter()
             .map(|t| TrackInRes {
                 artist: t.artist_id.as_ref().map(|artist_id| {
-                    schema::artists::table
-                        .filter(schema::artists::id.eq(artist_id))
+                    artists::table
+                        .filter(artists::id.eq(artist_id))
                         .get_result::<Artist>(&mut conn)
                         .unwrap()
                 }),
                 features: Feature::belonging_to(&t)
-                    .inner_join(schema::artists::table)
+                    .inner_join(artists::table)
                     .select(Artist::as_select())
                     .load(&mut conn)
                     .unwrap(),
                 album: t.album_id.as_ref().map(|album_id| {
-                    schema::albums::table
-                        .filter(schema::albums::id.eq(album_id))
+                    albums::table
+                        .filter(albums::id.eq(album_id))
                         .get_result::<Album>(&mut conn)
                         .unwrap()
                 }),
@@ -62,10 +58,7 @@ pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksData>>
         }
     };
 
-    let total_tracks = schema::tracks::table
-        .count()
-        .get_result::<i64>(&mut conn)
-        .unwrap();
+    let total_tracks = tracks::table.count().get_result::<i64>(&mut conn).unwrap();
 
     Json(Response::data(TracksData {
         tracks,

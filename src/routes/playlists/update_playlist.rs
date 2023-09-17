@@ -1,17 +1,11 @@
 use super::PlaylistData;
-use super::{ResError, Response};
-use crate::auth::Authorization;
-use crate::db;
 use crate::models::playlists::Playlist;
-use crate::schema;
+use crate::routes::prelude::*;
 use diesel::dsl::{exists, select};
-use diesel::prelude::*;
 use diesel::AsChangeset;
-use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, FromForm, AsChangeset)]
-#[diesel(table_name = schema::playlists)]
+#[diesel(table_name = playlists)]
 pub struct UpdatePlaylistBody {
     pub name: Option<String>,
     pub description: Option<String>,
@@ -24,13 +18,11 @@ pub fn update_playlist(
     id: String,
     body: Json<UpdatePlaylistBody>,
 ) -> Json<Response<PlaylistData>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
-    if !select(exists(
-        schema::playlists::table.filter(schema::playlists::id.eq(&id)),
-    ))
-    .get_result::<bool>(&mut conn)
-    .unwrap()
+    if !select(exists(playlists::table.filter(playlists::id.eq(&id))))
+        .get_result::<bool>(&mut conn)
+        .unwrap()
     {
         return Json(Response::error(ResError {
             msg: "Failed playlist does not exists".into(),
@@ -39,7 +31,7 @@ pub fn update_playlist(
     }
 
     if !select(exists(
-        schema::playlists::table.filter(schema::playlists::user_id.eq(&auth.user.id)),
+        playlists::table.filter(playlists::user_id.eq(&auth.user.id)),
     ))
     .get_result::<bool>(&mut conn)
     .unwrap()
@@ -50,7 +42,7 @@ pub fn update_playlist(
         }));
     }
 
-    match diesel::update(schema::playlists::table.filter(schema::playlists::id.eq(&id)))
+    match diesel::update(playlists::table.filter(playlists::id.eq(&id)))
         .set::<UpdatePlaylistBody>(body.into_inner())
         .get_result::<Playlist>(&mut conn)
     {

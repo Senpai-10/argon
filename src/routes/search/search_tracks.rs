@@ -1,6 +1,5 @@
-use super::{get_tracks, Response, TracksSearchData};
-use crate::db;
-use rocket::serde::json::Json;
+use super::{get_tracks, TracksSearchData};
+use crate::routes::prelude::*;
 
 #[get("/search/tracks?<q>&<offset>&<limit>")]
 pub async fn rt(
@@ -8,7 +7,7 @@ pub async fn rt(
     offset: Option<i64>,
     limit: Option<i64>,
 ) -> Json<Response<TracksSearchData>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
     let search_query = format!("%{q}%");
 

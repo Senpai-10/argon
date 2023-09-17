@@ -1,13 +1,8 @@
-use super::Response;
-use crate::db;
 use crate::models::albums::AlbumWithTracks;
 use crate::models::features::Feature;
 use crate::models::tracks::TrackInRes;
 use crate::models::{albums::Album, artists::Artist, tracks::Track};
-use crate::schema;
-use diesel::prelude::*;
-use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
+use crate::routes::prelude::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct AlbumData {
@@ -16,10 +11,10 @@ pub struct AlbumData {
 
 #[get("/albums/<id>")]
 pub fn rt(id: String) -> Json<Response<AlbumData>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
-    let album = schema::albums::table
-        .filter(schema::albums::id.eq(id))
+    let album = albums::table
+        .filter(albums::id.eq(id))
         .get_result::<Album>(&mut conn)
         .unwrap();
 
@@ -30,14 +25,14 @@ pub fn rt(id: String) -> Json<Response<AlbumData>> {
         .into_iter()
         .map(|t| TrackInRes {
             artist: t.artist_id.as_ref().map(|artist_id| {
-                schema::artists::table
-                    .filter(schema::artists::id.eq(artist_id))
+                artists::table
+                    .filter(artists::id.eq(artist_id))
                     .get_result(&mut conn)
                     .unwrap()
             }),
             album: Some(album.clone()),
             features: Feature::belonging_to(&t)
-                .inner_join(schema::artists::table)
+                .inner_join(artists::table)
                 .select(Artist::as_select())
                 .load(&mut conn)
                 .unwrap(),
@@ -47,8 +42,8 @@ pub fn rt(id: String) -> Json<Response<AlbumData>> {
 
     Json(Response::data(AlbumData {
         album: AlbumWithTracks {
-            artist: schema::artists::table
-                .filter(schema::artists::id.eq(&album.artist_id))
+            artist: artists::table
+                .filter(artists::id.eq(&album.artist_id))
                 .get_result::<Artist>(&mut conn)
                 .unwrap(),
             album,

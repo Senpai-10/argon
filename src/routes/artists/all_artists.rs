@@ -1,14 +1,9 @@
-use super::Response;
-use crate::db;
 use crate::models::albums::Album;
 use crate::models::artists::ArtistWithTracks;
 use crate::models::features::Feature;
 use crate::models::tracks::TrackInRes;
 use crate::models::{artists::Artist, tracks::Track};
-use crate::schema;
-use diesel::prelude::*;
-use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
+use crate::routes::prelude::*;
 
 #[derive(Deserialize, Serialize)]
 pub struct Data {
@@ -20,8 +15,8 @@ pub struct Data {
 
 #[get("/artists?<offset>&<limit>")]
 pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
-    let mut conn = db::establish_connection();
-    let mut query = schema::artists::table.into_boxed();
+    let mut conn = establish_connection();
+    let mut query = artists::table.into_boxed();
 
     if let Some(offset) = offset {
         query = query.offset(offset);
@@ -34,7 +29,7 @@ pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
     let all_artists = query.select(Artist::as_select()).load(&mut conn).unwrap();
 
     let tracks: Vec<(Track, Option<Album>)> = Track::belonging_to(&all_artists)
-        .left_join(schema::albums::table)
+        .left_join(albums::table)
         .load::<(Track, Option<Album>)>(&mut conn)
         .unwrap();
 
@@ -50,7 +45,7 @@ pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
                     artist: Some(artist.clone()),
                     album,
                     features: Feature::belonging_to(&t)
-                        .inner_join(schema::artists::table)
+                        .inner_join(artists::table)
                         .select(Artist::as_select())
                         .load(&mut conn)
                         .unwrap(),
@@ -60,10 +55,7 @@ pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
         })
         .collect::<Vec<ArtistWithTracks>>();
 
-    let total = schema::artists::table
-        .count()
-        .get_result::<i64>(&mut conn)
-        .unwrap();
+    let total = artists::table.count().get_result::<i64>(&mut conn).unwrap();
 
     Json(Response::data(Data {
         artists: artist_with_tracks,

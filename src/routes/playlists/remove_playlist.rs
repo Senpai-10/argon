@@ -1,18 +1,14 @@
-use super::{PlaylistData, ResError, Response};
-use crate::auth::Authorization;
-use crate::db;
+use super::PlaylistData;
 use crate::models::playlists::Playlist;
-use crate::schema;
+use crate::routes::prelude::*;
 use diesel::dsl::{exists, select};
-use diesel::prelude::*;
-use rocket::serde::json::Json;
 
 #[delete("/playlists/<id>")]
 pub fn remove_playlist(auth: Authorization, id: String) -> Json<Response<PlaylistData>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
     if !select(exists(
-        schema::playlists::table.filter(schema::playlists::user_id.eq(&auth.user.id)),
+        playlists::table.filter(playlists::user_id.eq(&auth.user.id)),
     ))
     .get_result::<bool>(&mut conn)
     .unwrap()
@@ -24,7 +20,7 @@ pub fn remove_playlist(auth: Authorization, id: String) -> Json<Response<Playlis
     }
 
     let delete_statment: Result<Playlist, diesel::result::Error> =
-        diesel::delete(schema::playlists::table.filter(schema::playlists::id.eq(&id)))
+        diesel::delete(playlists::table.filter(playlists::id.eq(&id)))
             .get_result::<Playlist>(&mut conn);
 
     match delete_statment {

@@ -3,7 +3,6 @@ mod search_all;
 mod search_artists;
 mod search_tracks;
 
-use super::Response;
 use crate::models::albums::AlbumWithTracks;
 use crate::models::artists::{Artist, ArtistWithTracks};
 use crate::models::features::Feature;

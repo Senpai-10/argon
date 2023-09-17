@@ -1,14 +1,9 @@
-use super::{ResError, Response};
-use crate::db;
 use crate::models::albums::Album;
 use crate::models::artists::ArtistWithTracks;
 use crate::models::features::Feature;
 use crate::models::tracks::TrackInRes;
 use crate::models::{artists::Artist, tracks::Track};
-use crate::schema;
-use diesel::prelude::*;
-use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
+use crate::routes::prelude::*;
 
 #[derive(Deserialize, Serialize)]
 pub struct ArtistData {
@@ -17,10 +12,10 @@ pub struct ArtistData {
 
 #[get("/artists/<id>")]
 pub fn rt(id: String) -> Json<Response<ArtistData>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
-    let artist: Artist = match schema::artists::table
-        .filter(schema::artists::id.eq(&id))
+    let artist: Artist = match artists::table
+        .filter(artists::id.eq(&id))
         .select(Artist::as_select())
         .get_result(&mut conn)
     {
@@ -34,7 +29,7 @@ pub fn rt(id: String) -> Json<Response<ArtistData>> {
     };
 
     let tracks: Vec<TrackInRes> = match Track::belonging_to(&artist)
-        .left_join(schema::albums::table)
+        .left_join(albums::table)
         .load::<(Track, Option<Album>)>(&mut conn)
     {
         Ok(v) => v
@@ -43,7 +38,7 @@ pub fn rt(id: String) -> Json<Response<ArtistData>> {
                 artist: Some(artist.clone()),
                 album,
                 features: Feature::belonging_to(&t)
-                    .inner_join(schema::artists::table)
+                    .inner_join(artists::table)
                     .select(Artist::as_select())
                     .load(&mut conn)
                     .unwrap(),

@@ -2,7 +2,6 @@ mod all_favorites;
 mod new_favorite;
 mod remove_favorite;
 
-use super::{ResError, Response};
 use crate::models::tracks::TrackInRes;
 use serde::{Deserialize, Serialize};
 

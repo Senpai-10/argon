@@ -1,10 +1,5 @@
-use super::{ResError, Response};
-use crate::db;
 use crate::models::scan_info::ScanInfo;
-use crate::schema;
-use diesel::prelude::*;
-use rocket::serde::json::Json;
-use serde::{Deserialize, Serialize};
+use crate::routes::prelude::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct Stats {
@@ -16,10 +11,10 @@ pub struct Stats {
 
 #[get("/stats")]
 pub fn rt() -> Json<Response<Stats>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
-    let scans = match schema::scan_info::table
-        .order(schema::scan_info::id)
+    let scans = match scan_info::table
+        .order(scan_info::id)
         .load::<ScanInfo>(&mut conn)
     {
         Ok(v) => v,
@@ -31,17 +26,17 @@ pub fn rt() -> Json<Response<Stats>> {
         }
     };
 
-    let artists = schema::artists::table
+    let artists = artists::table
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap_or(0);
 
-    let albums = schema::albums::table
+    let albums = albums::table
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap_or(0);
 
-    let tracks = schema::tracks::table
+    let tracks = tracks::table
         .count()
         .get_result::<i64>(&mut conn)
         .unwrap_or(0);

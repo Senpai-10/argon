@@ -1,17 +1,15 @@
-use crate::db;
 use crate::models::tracks::Track;
-use crate::schema;
-use diesel::prelude::*;
+use crate::routes::prelude::*;
 use rocket::response::status::NotFound;
 use rocket_seek_stream::SeekStream;
 use std::path::Path;
 
 #[get("/stream/<id>")]
 pub fn rt<'a>(id: String) -> Result<SeekStream<'a>, NotFound<String>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
-    let track: Track = match schema::tracks::table
-        .filter(schema::tracks::id.eq(&id))
+    let track: Track = match tracks::table
+        .filter(tracks::id.eq(&id))
         .get_result::<Track>(&mut conn)
     {
         Ok(v) => v,
@@ -19,9 +17,9 @@ pub fn rt<'a>(id: String) -> Result<SeekStream<'a>, NotFound<String>> {
     };
 
     // Update track global plays
-    if let Err(e) = diesel::update(schema::tracks::table)
-        .filter(schema::tracks::id.eq(&id))
-        .set(schema::tracks::plays.eq(track.plays + 1))
+    if let Err(e) = diesel::update(tracks::table)
+        .filter(tracks::id.eq(&id))
+        .set(tracks::plays.eq(track.plays + 1))
         .execute(&mut conn)
     {
         error!("Failed to update track plays!, {e}")

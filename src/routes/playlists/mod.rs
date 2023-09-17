@@ -6,7 +6,6 @@ mod remove_playlist;
 mod remove_playlist_track;
 mod update_playlist;
 
-use super::{ResError, Response};
 use crate::models::playlists::Playlist;
 use crate::models::tracks::TrackInRes;
 use serde::{Deserialize, Serialize};

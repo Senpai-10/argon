@@ -1,15 +1,11 @@
-use super::{Data, ResError, Response};
-use crate::auth::Authorization;
-use crate::db;
-use crate::schema;
-use diesel::prelude::*;
-use rocket::serde::json::Json;
+use super::Data;
+use crate::routes::prelude::*;
 
 #[post("/logout")]
 pub fn rt(auth: Authorization) -> Json<Response<Data>> {
-    let mut conn = db::establish_connection();
+    let mut conn = establish_connection();
 
-    match diesel::delete(schema::sessions::table.filter(schema::sessions::id.eq(&auth.session_id)))
+    match diesel::delete(sessions::table.filter(sessions::id.eq(&auth.session_id)))
         .execute(&mut conn)
     {
         Ok(_) => Json(Response::data(Data {
