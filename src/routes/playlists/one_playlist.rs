@@ -4,6 +4,7 @@ use crate::models::playlists::{Playlist, PlaylistInRes};
 use crate::models::tracks::TrackInRes;
 use crate::models::{artists::Artist, tracks::Track};
 use crate::routes::prelude::*;
+use diesel::dsl::{exists, select};
 
 #[derive(Deserialize, Serialize)]
 pub struct Data {
@@ -14,13 +15,30 @@ pub struct Data {
 pub fn one_playlist(auth: Authorization, id: String) -> Json<Response<Data>> {
     let mut conn = establish_connection();
 
+    if !select(exists(playlists::table.filter(playlists::id.eq(&id))))
+        .get_result::<bool>(&mut conn)
+        .unwrap()
+    {
+        return Json(Response::error(ResError {
+            msg: "Playlist not found".into(),
+            detail: "No such playlist".into(),
+        }));
+    }
+
     let playlist: Playlist = match playlists::table
-        .filter(playlists::user_id.eq(&auth.user.id))
         .filter(playlists::id.eq(&id))
-        .order(playlists::created_at.desc())
         .get_result::<Playlist>(&mut conn)
     {
-        Ok(v) => v,
+        Ok(r) => {
+            if !r.is_public && r.user_id != auth.user.id {
+                return Json(Response::error(ResError {
+                    msg: "Permission denied".into(),
+                    detail: "Playlist is not public".into(),
+                }));
+            }
+
+            r
+        }
         Err(e) => {
             return Json(Response::error(ResError {
                 msg: "Failed to fetch playlist".into(),
