@@ -1,5 +1,9 @@
+mod search_albums;
+mod search_all;
+mod search_artists;
+mod search_tracks;
+
 use super::Response;
-use crate::db;
 use crate::models::albums::AlbumWithTracks;
 use crate::models::artists::{Artist, ArtistWithTracks};
 use crate::models::features::Feature;
@@ -7,7 +11,6 @@ use crate::models::tracks::TrackInRes;
 use crate::models::{albums::Album, tracks::Track};
 use crate::schema;
 use diesel::prelude::*;
-use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
@@ -32,69 +35,7 @@ pub struct AlbumsSearchData {
     albums: Vec<AlbumWithTracks>,
 }
 
-#[get("/search?<q>&<offset>&<limit>")]
-pub async fn search(
-    q: String,
-    offset: Option<i64>,
-    limit: Option<i64>,
-) -> Json<Response<SearchAllData>> {
-    let mut conn = db::establish_connection();
-
-    let search_query = format!("%{q}%");
-
-    Json(Response::data(SearchAllData {
-        artists: get_artists(&mut conn, &search_query, offset, limit),
-        tracks: get_tracks(&mut conn, &search_query, offset, limit),
-        albums: get_albums(&mut conn, &search_query, offset, limit),
-    }))
-}
-
-#[get("/search/artists?<q>&<offset>&<limit>")]
-pub async fn search_artists(
-    q: String,
-    offset: Option<i64>,
-    limit: Option<i64>,
-) -> Json<Response<ArtistsSearchData>> {
-    let mut conn = db::establish_connection();
-
-    let search_query = format!("%{q}%");
-
-    Json(Response::data(ArtistsSearchData {
-        artists: get_artists(&mut conn, &search_query, offset, limit),
-    }))
-}
-
-#[get("/search/tracks?<q>&<offset>&<limit>")]
-pub async fn search_tracks(
-    q: String,
-    offset: Option<i64>,
-    limit: Option<i64>,
-) -> Json<Response<TracksSearchData>> {
-    let mut conn = db::establish_connection();
-
-    let search_query = format!("%{q}%");
-
-    Json(Response::data(TracksSearchData {
-        tracks: get_tracks(&mut conn, &search_query, offset, limit),
-    }))
-}
-
-#[get("/search/albums?<q>&<offset>&<limit>")]
-pub async fn search_albums(
-    q: String,
-    offset: Option<i64>,
-    limit: Option<i64>,
-) -> Json<Response<AlbumsSearchData>> {
-    let mut conn = db::establish_connection();
-
-    let search_query = format!("%{q}%");
-
-    Json(Response::data(AlbumsSearchData {
-        albums: get_albums(&mut conn, &search_query, offset, limit),
-    }))
-}
-
-fn get_artists(
+pub fn get_artists(
     conn: &mut PgConnection,
     search_query: &str,
     offset: Option<i64>,
@@ -144,7 +85,7 @@ fn get_artists(
         .collect::<Vec<ArtistWithTracks>>()
 }
 
-fn get_tracks(
+pub fn get_tracks(
     conn: &mut PgConnection,
     search_query: &str,
     offset: Option<i64>,
@@ -183,7 +124,7 @@ fn get_tracks(
         .collect::<Vec<TrackInRes>>()
 }
 
-fn get_albums(
+pub fn get_albums(
     conn: &mut PgConnection,
     search_query: &str,
     offset: Option<i64>,
@@ -240,4 +181,13 @@ fn get_albums(
                 .collect::<Vec<TrackInRes>>(),
         })
         .collect::<Vec<AlbumWithTracks>>()
+}
+
+pub fn routes() -> Vec<rocket::Route> {
+    routes![
+        search_all::search_all,
+        search_artists::search_artists,
+        search_tracks::search_tracks,
+        search_albums::search_albums,
+    ]
 }

@@ -17,13 +17,8 @@ pub struct Data {
     total: i64,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct AlbumData {
-    album: AlbumWithTracks,
-}
-
 #[get("/albums?<artist>&<offset>&<limit>")]
-pub fn albums(
+pub fn all_albums(
     artist: Option<String>,
     offset: Option<i64>,
     limit: Option<i64>,
@@ -91,48 +86,5 @@ pub fn albums(
         offset,
         limit,
         total,
-    }))
-}
-
-#[get("/albums/<id>")]
-pub fn album(id: String) -> Json<Response<AlbumData>> {
-    let mut conn = db::establish_connection();
-
-    let album = schema::albums::table
-        .filter(schema::albums::id.eq(id))
-        .get_result::<Album>(&mut conn)
-        .unwrap();
-
-    let album_tracks = Track::belonging_to(&album)
-        .select(Track::as_select())
-        .load(&mut conn)
-        .unwrap()
-        .into_iter()
-        .map(|t| TrackInRes {
-            artist: t.artist_id.as_ref().map(|artist_id| {
-                schema::artists::table
-                    .filter(schema::artists::id.eq(artist_id))
-                    .get_result(&mut conn)
-                    .unwrap()
-            }),
-            album: Some(album.clone()),
-            features: Feature::belonging_to(&t)
-                .inner_join(schema::artists::table)
-                .select(Artist::as_select())
-                .load(&mut conn)
-                .unwrap(),
-            track: t,
-        })
-        .collect::<Vec<TrackInRes>>();
-
-    Json(Response::data(AlbumData {
-        album: AlbumWithTracks {
-            artist: schema::artists::table
-                .filter(schema::artists::id.eq(&album.artist_id))
-                .get_result::<Artist>(&mut conn)
-                .unwrap(),
-            album,
-            tracks: album_tracks,
-        },
     }))
 }
