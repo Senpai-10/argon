@@ -61,9 +61,10 @@ diesel::table! {
 
 diesel::table! {
     scan_info (id) {
-        id -> Int4,
+        id -> Text,
         scan_start -> Timestamp,
-        scan_end -> Timestamp,
+        scan_end -> Nullable<Timestamp>,
+        is_done -> Bool,
         artists -> Int4,
         albums -> Int4,
         tracks -> Int4,
