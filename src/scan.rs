@@ -3,7 +3,7 @@ use crate::models::artists::NewArtist;
 use crate::models::features::NewFeature;
 use crate::models::scan_info::{NewScanInfo, ScanInfo};
 use crate::models::tracks::NewTrack;
-use crate::schema;
+use crate::schema::*;
 use chrono::{NaiveDateTime, Utc};
 use diesel::dsl::{exists, select};
 use diesel::pg::PgConnection;
@@ -12,13 +12,12 @@ use id3::TagLike;
 use mpeg_audio_header::{Header, ParseMode};
 use nanoid::nanoid;
 use std::env;
-use std::fmt;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 /// check if this is the first time the program starts
 pub fn is_first_run(conn: &mut PgConnection) -> bool {
-    let count = schema::scan_info::table
+    let count = scan_info::table
         .count()
         .get_result::<i64>(conn)
         .unwrap_or(0);
@@ -27,51 +26,35 @@ pub fn is_first_run(conn: &mut PgConnection) -> bool {
 }
 
 fn track_exists(conn: &mut PgConnection, id: &String) -> bool {
-    select(exists(
-        schema::tracks::table.filter(schema::tracks::id.eq(id)),
-    ))
-    .get_result::<bool>(conn)
-    .unwrap()
+    select(exists(tracks::table.filter(tracks::id.eq(id))))
+        .get_result::<bool>(conn)
+        .unwrap()
 }
 
 fn album_exists(conn: &mut PgConnection, title: &String, artist_id: &String) -> bool {
     select(exists(
-        schema::albums::table
-            .filter(schema::albums::title.eq(title))
-            .filter(schema::albums::artist_id.eq(artist_id)),
+        albums::table
+            .filter(albums::title.eq(title))
+            .filter(albums::artist_id.eq(artist_id)),
     ))
     .get_result::<bool>(conn)
     .unwrap()
 }
 
 fn artist_exists(conn: &mut PgConnection, id: &String) -> bool {
-    select(exists(
-        schema::artists::table.filter(schema::artists::id.eq(id)),
-    ))
-    .get_result::<bool>(conn)
-    .unwrap()
+    select(exists(artists::table.filter(artists::id.eq(id))))
+        .get_result::<bool>(conn)
+        .unwrap()
 }
 
 fn feature_exists(conn: &mut PgConnection, artist_id: String, track_id: String) -> bool {
     select(exists(
-        schema::features::table
-            .filter(schema::features::artist_id.eq(artist_id))
-            .filter(schema::features::track_id.eq(track_id)),
+        features::table
+            .filter(features::artist_id.eq(artist_id))
+            .filter(features::track_id.eq(track_id)),
     ))
     .get_result::<bool>(conn)
     .unwrap()
-}
-
-pub enum ScanError {
-    ScannerLocked,
-}
-
-impl fmt::Display for ScanError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ScanError::ScannerLocked => write!(f, "Scanner is already running"),
-        }
-    }
 }
 
 #[derive(Default)]
@@ -82,6 +65,7 @@ struct Counter {
 }
 
 pub struct Scanner {
+    pub id: String,
     conn: PgConnection,
     counter: Counter,
     scan_start: NaiveDateTime,
@@ -90,6 +74,7 @@ pub struct Scanner {
 impl Scanner {
     pub fn new(conn: PgConnection) -> Self {
         Self {
+            id: nanoid!(),
             conn,
             counter: Counter::default(),
             scan_start: Utc::now().naive_utc(),
@@ -120,33 +105,39 @@ impl Scanner {
         }
     }
 
-    fn record_scan_info(&mut self) -> Result<ScanInfo, diesel::result::Error> {
-        let scan_end = Utc::now().naive_utc();
-
+    fn record_scan_start(&mut self) -> Result<ScanInfo, diesel::result::Error> {
         let new_scan_info = NewScanInfo {
+            id: self.id.clone(),
             scan_start: self.scan_start,
-            scan_end,
+            scan_end: None,
+            is_done: false,
             artists: self.counter.artists,
             albums: self.counter.albums,
             tracks: self.counter.tracks,
         };
 
-        info!(
-            "Scan Done({}s), Found {} artist, {} album, {} track",
-            (new_scan_info.scan_end - new_scan_info.scan_start).num_seconds(),
-            new_scan_info.artists,
-            new_scan_info.albums,
-            new_scan_info.tracks,
-        );
-
-        diesel::insert_into(schema::scan_info::table)
+        diesel::insert_into(scan_info::table)
             .values(&new_scan_info)
             .get_result::<ScanInfo>(&mut self.conn)
     }
 
-    pub fn start(&mut self) -> Result<Option<ScanInfo>, ScanError> {
+    fn record_scan_end(&mut self) -> Result<ScanInfo, diesel::result::Error> {
+        let scan_end = Utc::now().naive_utc();
+
+        diesel::update(scan_info::table.filter(scan_info::id.eq(&self.id)))
+            .set((
+                scan_info::scan_end.eq(Some(scan_end)),
+                scan_info::is_done.eq(true),
+                scan_info::artists.eq(self.counter.artists),
+                scan_info::albums.eq(self.counter.albums),
+                scan_info::tracks.eq(self.counter.tracks),
+            ))
+            .get_result::<ScanInfo>(&mut self.conn)
+    }
+
+    pub fn start(&mut self) {
         if self.is_locked() {
-            return Err(ScanError::ScannerLocked);
+            return;
         }
 
         let music_dir: PathBuf = match env::var("ARGON_MUSIC_LIB") {
@@ -160,10 +151,12 @@ impl Scanner {
 
         if !music_dir.exists() {
             error!("Music dir does not exists! {}", music_dir.display());
-            return Ok(None);
+            return;
         }
 
         self.lock();
+
+        _ = self.record_scan_start();
 
         info!("Scanning Music library! '{}'", music_dir.display());
 
@@ -179,18 +172,14 @@ impl Scanner {
 
         self.unlock();
 
-        match self.record_scan_info() {
-            Ok(si) => {
+        match self.record_scan_end() {
+            Ok(_) => {
                 info!("Scan info saved!");
-
-                return Ok(Some(si));
             }
             Err(e) => {
-                error!("Failed to add scan info to database!, {e}")
+                error!("Failed to save scan info to database!, {e}")
             }
         };
-
-        Ok(None)
     }
 
     fn process_file(&mut self, file_path: &Path) {
@@ -232,7 +221,7 @@ impl Scanner {
                         name: artist.to_string(),
                     };
 
-                    match diesel::insert_into(schema::artists::table)
+                    match diesel::insert_into(artists::table)
                         .values(new_artist)
                         .execute(&mut self.conn)
                     {
@@ -274,7 +263,7 @@ impl Scanner {
                         artist_id: new_track.artist_id.clone().unwrap(),
                     };
 
-                    match diesel::insert_into(schema::albums::table)
+                    match diesel::insert_into(albums::table)
                         .values(&new_album)
                         .execute(&mut self.conn)
                     {
@@ -304,7 +293,7 @@ impl Scanner {
             new_track.track_number = Some(track_num as i32)
         }
 
-        match diesel::insert_into(schema::tracks::table)
+        match diesel::insert_into(tracks::table)
             .values(&new_track)
             .execute(&mut self.conn)
         {
@@ -324,7 +313,7 @@ impl Scanner {
         }
 
         if !features_insert_queue.is_empty() {
-            match diesel::insert_into(schema::features::table)
+            match diesel::insert_into(features::table)
                 .values(&features_insert_queue)
                 .execute(&mut self.conn)
             {

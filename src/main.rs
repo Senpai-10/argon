@@ -25,8 +25,10 @@ fn rocket() -> _ {
         if is_first_run(&mut conn) {
             let mut scanner = Scanner::new(conn);
 
-            if let Err(e) = scanner.start() {
-                error!("Scanner error: {}", e.to_string())
+            if scanner.is_locked() {
+                error!("Scanner is already running");
+            } else {
+                scanner.start()
             }
         }
     }
