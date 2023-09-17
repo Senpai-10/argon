@@ -29,16 +29,7 @@ pub fn one_playlist(auth: Authorization, id: String) -> Json<Response<Data>> {
         .filter(playlists::id.eq(&id))
         .get_result::<Playlist>(&mut conn)
     {
-        Ok(r) => {
-            if !r.is_public && r.user_id != auth.user.id {
-                return Json(Response::error(ResError {
-                    msg: "Permission denied".into(),
-                    detail: "Playlist is not public".into(),
-                }));
-            }
-
-            r
-        }
+        Ok(r) => r,
         Err(e) => {
             return Json(Response::error(ResError {
                 msg: "Failed to fetch playlist".into(),
@@ -46,6 +37,13 @@ pub fn one_playlist(auth: Authorization, id: String) -> Json<Response<Data>> {
             }))
         }
     };
+
+    if !playlist.is_public && playlist.user_id != auth.user.id {
+        return Json(Response::error(ResError {
+            msg: "Permission denied".into(),
+            detail: "Playlist is not public".into(),
+        }));
+    }
 
     Json(Response::data(Data {
         playlist: PlaylistInRes {
