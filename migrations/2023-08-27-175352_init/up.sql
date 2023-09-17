@@ -41,9 +41,10 @@ CREATE TABLE features (
 );
 
 CREATE TABLE scan_info (
-    id                      SERIAL PRIMARY KEY,
+    id                      TEXT PRIMARY KEY,
     scan_start              TIMESTAMP NOT NULL,
-    scan_end                TIMESTAMP NOT NULL,
+    scan_end                TIMESTAMP,
+    is_done                 BOOLEAN NOT NULL DEFAULT FALSE,
     artists                 INT NOT NULL,
     albums                  INT NOT NULL,
     tracks                  INT NOT NULL
