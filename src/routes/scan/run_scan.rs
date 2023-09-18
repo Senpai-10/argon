@@ -1,5 +1,5 @@
 use crate::routes::prelude::*;
-use crate::scan::Scanner;
+use crate::scanner::Scanner;
 
 #[derive(Deserialize, Serialize)]
 pub struct Data {

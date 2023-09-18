@@ -5,11 +5,11 @@ mod auth;
 mod db;
 mod models;
 mod routes;
-mod scan;
+mod scanner;
 mod schema;
 
 use dotenvy::dotenv;
-use scan::{is_first_run, Scanner};
+use scanner::Scanner;
 
 #[launch]
 fn rocket() -> _ {
@@ -20,9 +20,17 @@ fn rocket() -> _ {
         .init();
 
     {
+        use diesel::prelude::*;
+        use schema::scan_info;
+
         let mut conn = db::establish_connection();
 
-        if is_first_run(&mut conn) {
+        let count = scan_info::table
+            .count()
+            .get_result::<i64>(&mut conn)
+            .unwrap_or(0);
+
+        if count == 0 {
             let mut scanner = Scanner::new(conn);
 
             if scanner.is_locked() {
