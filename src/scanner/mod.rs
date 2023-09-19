@@ -4,13 +4,13 @@ use crate::models::albums::NewAlbum;
 use crate::models::artists::NewArtist;
 use crate::models::features::NewFeature;
 use crate::models::scan_info::{NewScanInfo, ScanInfo};
-use crate::models::tracks::NewTrack;
+use crate::models::tracks::{NewTrack, Track};
 use crate::schema::*;
 use chrono::{NaiveDateTime, Utc};
 use diesel::dsl::{exists, select};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use extract_metadata::extract_metadata;
+use extract_metadata::{extract_metadata, Metadata};
 use nanoid::nanoid;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -46,6 +46,18 @@ fn feature_exists(conn: &mut PgConnection, artist_id: String, track_id: String) 
     ))
     .get_result::<bool>(conn)
     .unwrap()
+}
+
+#[derive(AsChangeset, Debug, Default)]
+#[diesel(table_name = tracks)]
+struct UpdateTrackForm {
+    title: Option<String>,
+    artist_id: Option<String>,
+    album_id: Option<String>,
+    duration: Option<i32>,
+    year: Option<i32>,
+    track_number: Option<i32>,
+    path: Option<String>,
 }
 
 #[derive(Default)]
@@ -158,7 +170,14 @@ impl Scanner {
                 continue;
             }
 
-            self.process_file(file_path);
+            let id = sha256::digest(file_path.file_name().unwrap().to_str().unwrap());
+            let metadata = extract_metadata(file_path.to_path_buf());
+
+            if track_exists(&mut self.conn, &id) {
+                self.update_track(id, file_path, metadata);
+            } else {
+                self.add_track(id, file_path, metadata);
+            }
         }
 
         self.unlock();
@@ -173,14 +192,181 @@ impl Scanner {
         };
     }
 
-    fn process_file(&mut self, file_path: &Path) {
-        let id = sha256::try_digest(file_path).unwrap();
-        let metadata = extract_metadata(file_path.to_path_buf());
+    fn update_track(&mut self, id: String, file_path: &Path, metadata: Metadata) {
+        let mut update_track = UpdateTrackForm::default();
+        let track: Track = tracks::table
+            .filter(tracks::id.eq(&id))
+            .get_result::<Track>(&mut self.conn)
+            .unwrap();
 
-        if track_exists(&mut self.conn, &id) {
-            return;
+        if let Some(artist) = metadata.artist {
+            let artist_name_hash = sha256::digest(&artist);
+
+            if !artist_exists(&mut self.conn, &artist_name_hash) {
+                let new_artist = NewArtist {
+                    id: artist_name_hash.clone(),
+                    name: artist.to_string(),
+                };
+
+                match diesel::insert_into(artists::table)
+                    .values(new_artist)
+                    .execute(&mut self.conn)
+                {
+                    Ok(_) => {
+                        info!("Added new artist '{}' to database", &artist);
+                    }
+                    Err(e) => {
+                        error!("Failed to add artist to database!, {e}");
+                    }
+                };
+                self.counter.artists += 1;
+            }
+
+            match track.artist_id {
+                Some(artist_id) => {
+                    if artist_id != artist_name_hash {
+                        update_track.artist_id = Some(artist_name_hash.clone());
+                    }
+                }
+                None => {
+                    update_track.artist_id = Some(artist_name_hash.clone());
+                }
+            }
+
+            if let Some(album) = metadata.album {
+                if !album_exists(&mut self.conn, &album.to_string(), &artist_name_hash) {
+                    let new_album = NewAlbum {
+                        id: nanoid!(),
+                        title: album.to_string(),
+                        artist_id: artist_name_hash.clone(),
+                    };
+
+                    match diesel::insert_into(albums::table)
+                        .values(&new_album)
+                        .execute(&mut self.conn)
+                    {
+                        Ok(_) => {
+                            info!("Added new album '{}' to database", new_album.title);
+                        }
+                        Err(e) => {
+                            error!("Failed to add album to database!, {e}");
+                        }
+                    }
+
+                    match track.album_id {
+                        Some(album_id) => {
+                            if album_id != new_album.id {
+                                update_track.album_id = Some(new_album.id);
+                            }
+                        }
+                        None => {
+                            update_track.album_id = Some(new_album.id);
+                        }
+                    }
+
+                    self.counter.albums += 1;
+                }
+            }
         }
 
+        match diesel::delete(features::table.filter(features::track_id.eq(&id)))
+            .execute(&mut self.conn)
+        {
+            Ok(_) => {
+                for featured_artist in metadata.features {
+                    let artist_name_hash = sha256::digest(&featured_artist);
+
+                    if !artist_exists(&mut self.conn, &artist_name_hash) {
+                        let new_artist = NewArtist {
+                            id: artist_name_hash.clone(),
+                            name: featured_artist.to_string(),
+                        };
+
+                        match diesel::insert_into(artists::table)
+                            .values(new_artist)
+                            .execute(&mut self.conn)
+                        {
+                            Ok(_) => {
+                                info!("Added new artist '{}' to database", featured_artist);
+                            }
+                            Err(e) => {
+                                error!("Failed to add artist to database!, {e}");
+                            }
+                        };
+
+                        self.counter.artists += 1;
+                    }
+
+                    let new_feature = NewFeature {
+                        id: nanoid!(),
+                        artist_id: artist_name_hash,
+                        track_id: id.clone(),
+                    };
+
+                    if let Err(e) = diesel::insert_into(features::table)
+                        .values(&new_feature)
+                        .execute(&mut self.conn)
+                    {
+                        error!("Failed to add featured artist to database!, {e}");
+                    }
+                }
+            }
+            Err(e) => {
+                error!(
+                    "Failed to update features for track('{}') from database!, {e}",
+                    id
+                );
+            }
+        }
+
+        if track.title != metadata.title {
+            update_track.title = Some(metadata.title);
+        }
+
+        if track.duration != metadata.duration {
+            update_track.duration = Some(metadata.duration);
+        }
+
+        if let Some(year) = metadata.year {
+            match track.year {
+                Some(v) => {
+                    if v != year {
+                        update_track.year = Some(year);
+                    }
+                }
+                None => {
+                    update_track.year = Some(year);
+                }
+            }
+        }
+
+        if let Some(track_number) = metadata.track_number {
+            match track.track_number {
+                Some(v) => {
+                    if v != track_number {
+                        update_track.track_number = Some(track_number);
+                    }
+                }
+                None => {
+                    update_track.track_number = Some(track_number);
+                }
+            }
+        }
+
+        if track.path != file_path.display().to_string() {
+            update_track.path = Some(file_path.display().to_string());
+        }
+
+        if diesel::update(tracks::table.filter(tracks::id.eq(&id)))
+            .set::<UpdateTrackForm>(update_track)
+            .execute(&mut self.conn)
+            .is_ok()
+        {
+            info!("Updated track('{}') in database!", id);
+        }
+    }
+
+    fn add_track(&mut self, id: String, file_path: &Path, metadata: Metadata) {
         let mut features_insert_queue: Vec<NewFeature> = Vec::new();
 
         let mut new_track = NewTrack {
@@ -191,7 +377,7 @@ impl Scanner {
             duration: metadata.duration,
             year: metadata.year,
             track_number: metadata.track_number,
-            path: file_path.to_str().unwrap().to_string(),
+            path: file_path.display().to_string(),
         };
 
         if let Some(artist) = metadata.artist {
