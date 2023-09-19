@@ -14,7 +14,7 @@ pub fn rt() -> Json<Response<Stats>> {
     let mut conn = establish_connection();
 
     let scans = match scan_info::table
-        .order(scan_info::id)
+        .order(scan_info::scan_start)
         .load::<ScanInfo>(&mut conn)
     {
         Ok(v) => v,
