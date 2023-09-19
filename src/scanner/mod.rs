@@ -74,6 +74,7 @@ pub struct Scanner {
     scan_start: NaiveDateTime,
 }
 
+// TODO: Refactor
 impl Scanner {
     pub fn new(conn: PgConnection) -> Self {
         Self {
