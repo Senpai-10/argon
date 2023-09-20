@@ -22,7 +22,7 @@ pub fn rt(id: String) -> Json<Response<AlbumData>> {
         .load(&mut conn)
         .unwrap()
         .into_iter()
-        .map(|t| t.to_response(&mut conn))
+        .map(|t| t.in_response(&mut conn))
         .collect::<Vec<TrackInRes>>();
 
     Json(Response::data(AlbumData {

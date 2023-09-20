@@ -52,7 +52,7 @@ pub fn rt(auth: Authorization, id: String) -> Json<Response<Data>> {
                 .load::<Track>(&mut conn)
                 .unwrap()
                 .into_iter()
-                .map(|t| t.to_response(&mut conn))
+                .map(|t| t.in_response(&mut conn))
                 .collect::<Vec<TrackInRes>>(),
             playlist,
         },

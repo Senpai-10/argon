@@ -38,7 +38,7 @@ pub fn rt(auth: Authorization, offset: Option<i64>, limit: Option<i64>) -> Json<
                 .load::<Track>(&mut conn)
                 .unwrap()
                 .into_iter()
-                .map(|t| t.to_response(&mut conn))
+                .map(|t| t.in_response(&mut conn))
                 .collect::<Vec<TrackInRes>>(),
             playlist,
         })

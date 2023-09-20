@@ -67,7 +67,7 @@ pub fn get_artists(
             artist: artist.clone(),
             tracks: tracks
                 .into_iter()
-                .map(|t| t.to_response(conn))
+                .map(|t| t.in_response(conn))
                 .collect::<Vec<TrackInRes>>(),
             featured_on: schema::features::table
                 .filter(schema::features::artist_id.eq(&artist.id))
@@ -76,7 +76,7 @@ pub fn get_artists(
                 .load(conn)
                 .unwrap()
                 .into_iter()
-                .map(|track| track.to_response(conn))
+                .map(|track| track.in_response(conn))
                 .collect::<Vec<TrackInRes>>(),
         })
         .collect::<Vec<ArtistWithTracks>>()
@@ -104,7 +104,7 @@ pub fn get_tracks(
         .load::<Track>(conn)
         .unwrap()
         .into_iter()
-        .map(|track: Track| track.to_response(conn))
+        .map(|track: Track| track.in_response(conn))
         .collect::<Vec<TrackInRes>>()
 }
 
@@ -147,7 +147,7 @@ pub fn get_albums(
             album: album.clone(),
             tracks: albums_tracks
                 .into_iter()
-                .map(|t| t.to_response(conn))
+                .map(|t| t.in_response(conn))
                 .collect::<Vec<TrackInRes>>(),
         })
         .collect::<Vec<AlbumWithTracks>>()

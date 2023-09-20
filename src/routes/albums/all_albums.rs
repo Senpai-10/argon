@@ -46,7 +46,7 @@ pub fn rt(artist: Option<String>, offset: Option<i64>, limit: Option<i64>) -> Js
                 .unwrap(),
             tracks: albums_tracks
                 .into_iter()
-                .map(|t| t.to_response(&mut conn))
+                .map(|t| t.in_response(&mut conn))
                 .collect::<Vec<TrackInRes>>(),
             album,
         })

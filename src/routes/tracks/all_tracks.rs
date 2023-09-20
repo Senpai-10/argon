@@ -26,7 +26,7 @@ pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<TracksData>>
     let tracks: Vec<TrackInRes> = match query.load::<Track>(&mut conn) {
         Ok(v) => v
             .into_iter()
-            .map(|t| t.to_response(&mut conn))
+            .map(|t| t.in_response(&mut conn))
             .collect::<Vec<TrackInRes>>(),
         Err(e) => {
             return Json(Response::error(ResError {

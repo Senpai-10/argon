@@ -15,7 +15,7 @@ pub fn rt(id: String) -> Json<Response<TrackData>> {
         .filter(tracks::id.eq(&id))
         .get_result::<Track>(&mut conn)
     {
-        Ok(t) => t.to_response(&mut conn),
+        Ok(t) => t.in_response(&mut conn),
         Err(e) => {
             return Json(Response::error(ResError {
                 msg: e.to_string(),

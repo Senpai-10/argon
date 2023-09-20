@@ -63,7 +63,7 @@ pub fn rt(id: String) -> Json<Response<ArtistData>> {
                 .load(&mut conn)
                 .unwrap()
                 .into_iter()
-                .map(|track| track.to_response(&mut conn))
+                .map(|track| track.in_response(&mut conn))
                 .collect::<Vec<TrackInRes>>(),
             artist,
         },

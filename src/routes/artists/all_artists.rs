@@ -59,7 +59,7 @@ pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
                 .load(&mut conn)
                 .unwrap()
                 .into_iter()
-                .map(|track| track.to_response(&mut conn))
+                .map(|track| track.in_response(&mut conn))
                 .collect::<Vec<TrackInRes>>(),
         })
         .collect::<Vec<ArtistWithTracks>>();

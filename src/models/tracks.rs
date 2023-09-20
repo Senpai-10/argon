@@ -51,7 +51,7 @@ pub struct NewTrack {
 }
 
 impl Track {
-    pub fn to_response(self, conn: &mut PgConnection) -> TrackInRes {
+    pub fn in_response(self, conn: &mut PgConnection) -> TrackInRes {
         TrackInRes {
             artist: self.artist_id.as_ref().map(|artist_id| {
                 schema::artists::table
