@@ -9,7 +9,7 @@ mod scanner;
 mod schema;
 
 use dotenvy::dotenv;
-use scanner::Scanner;
+use scanner::{lock_manager, Scanner};
 
 #[launch]
 fn rocket() -> _ {
@@ -33,7 +33,7 @@ fn rocket() -> _ {
         if count == 0 {
             let mut scanner = Scanner::new(conn);
 
-            if scanner.is_locked() {
+            if lock_manager::is_locked() {
                 error!("Scanner is already running");
             } else {
                 scanner.start()

@@ -1,8 +1,9 @@
 mod extract_metadata;
+pub mod lock_manager;
 
-use crate::models::albums::NewAlbum;
-use crate::models::artists::NewArtist;
-use crate::models::features::NewFeature;
+use crate::models::albums::{Album, NewAlbum};
+use crate::models::artists::{Artist, NewArtist};
+use crate::models::features::{Feature, NewFeature};
 use crate::models::scan_info::{NewScanInfo, ScanInfo};
 use crate::models::tracks::{NewTrack, Track};
 use crate::schema::*;
@@ -15,38 +16,6 @@ use nanoid::nanoid;
 use std::env;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
-
-fn track_exists(conn: &mut PgConnection, id: &String) -> bool {
-    select(exists(tracks::table.filter(tracks::id.eq(id))))
-        .get_result::<bool>(conn)
-        .unwrap()
-}
-
-fn album_exists(conn: &mut PgConnection, title: &String, artist_id: &String) -> bool {
-    select(exists(
-        albums::table
-            .filter(albums::title.eq(title))
-            .filter(albums::artist_id.eq(artist_id)),
-    ))
-    .get_result::<bool>(conn)
-    .unwrap()
-}
-
-fn artist_exists(conn: &mut PgConnection, id: &String) -> bool {
-    select(exists(artists::table.filter(artists::id.eq(id))))
-        .get_result::<bool>(conn)
-        .unwrap()
-}
-
-fn feature_exists(conn: &mut PgConnection, artist_id: String, track_id: String) -> bool {
-    select(exists(
-        features::table
-            .filter(features::artist_id.eq(artist_id))
-            .filter(features::track_id.eq(track_id)),
-    ))
-    .get_result::<bool>(conn)
-    .unwrap()
-}
 
 #[derive(AsChangeset, Debug, Default)]
 #[diesel(table_name = tracks)]
@@ -74,7 +43,6 @@ pub struct Scanner {
     scan_start: NaiveDateTime,
 }
 
-// TODO: Refactor
 impl Scanner {
     pub fn new(conn: PgConnection) -> Self {
         Self {
@@ -82,30 +50,6 @@ impl Scanner {
             conn,
             counter: Counter::default(),
             scan_start: Utc::now().naive_utc(),
-        }
-    }
-
-    fn get_lock_file(&self) -> PathBuf {
-        env::temp_dir().join(".argon-scanner-lock")
-    }
-
-    pub fn is_locked(&self) -> bool {
-        self.get_lock_file().exists()
-    }
-
-    fn lock(&self) {
-        let file = self.get_lock_file();
-
-        if !file.exists() {
-            _ = std::fs::write(file, "");
-        }
-    }
-
-    fn unlock(&self) {
-        let file = self.get_lock_file();
-
-        if file.exists() {
-            _ = std::fs::remove_file(file);
         }
     }
 
@@ -139,8 +83,114 @@ impl Scanner {
             .get_result::<ScanInfo>(&mut self.conn)
     }
 
+    fn track_exists(&mut self, id: &String) -> bool {
+        select(exists(tracks::table.filter(tracks::id.eq(id))))
+            .get_result::<bool>(&mut self.conn)
+            .unwrap()
+    }
+
+    fn artist_exists(&mut self, id: &String) -> bool {
+        select(exists(artists::table.filter(artists::id.eq(id))))
+            .get_result::<bool>(&mut self.conn)
+            .unwrap()
+    }
+
+    fn album_exists(&mut self, title: &String, artist_id: &String) -> bool {
+        select(exists(
+            albums::table
+                .filter(albums::title.eq(title))
+                .filter(albums::artist_id.eq(artist_id)),
+        ))
+        .get_result::<bool>(&mut self.conn)
+        .unwrap()
+    }
+
+    fn feature_exists(&mut self, artist_id: &String, track_id: &String) -> bool {
+        select(exists(
+            features::table
+                .filter(features::artist_id.eq(artist_id))
+                .filter(features::track_id.eq(track_id)),
+        ))
+        .get_result::<bool>(&mut self.conn)
+        .unwrap()
+    }
+
+    fn new_artist(&mut self, id: String, name: String) -> Result<Artist, diesel::result::Error> {
+        let new_artist = NewArtist { id, name };
+
+        match diesel::insert_into(artists::table)
+            .values(new_artist)
+            .get_result::<Artist>(&mut self.conn)
+        {
+            Ok(artist) => {
+                info!("Added new artist '{}' to database", artist.name);
+                Ok(artist)
+            }
+            Err(e) => {
+                error!("Failed to add artist to database!, {e}");
+                Err(e)
+            }
+        }
+    }
+
+    fn new_feature(
+        &mut self,
+        artist_id: String,
+        track_id: String,
+    ) -> Result<Feature, diesel::result::Error> {
+        let new_feature = NewFeature {
+            id: nanoid!(),
+            artist_id,
+            track_id,
+        };
+
+        match diesel::insert_into(features::table)
+            .values(new_feature)
+            .get_result::<Feature>(&mut self.conn)
+        {
+            Ok(feature) => {
+                info!(
+                    "Added new featured artist '{}' to database",
+                    feature.artist_id
+                );
+                Ok(feature)
+            }
+            Err(e) => {
+                error!("Failed to add featured artist to database!, {e}");
+                Err(e)
+            }
+        }
+    }
+
+    fn new_album(
+        &mut self,
+        id: String,
+        title: String,
+        artist_id: String,
+    ) -> Result<Album, diesel::result::Error> {
+        let new_album = NewAlbum {
+            id,
+            title,
+            artist_id,
+        };
+
+        match diesel::insert_into(albums::table)
+            .values(new_album)
+            .get_result::<Album>(&mut self.conn)
+        {
+            Ok(album) => {
+                info!("Added new album '{}' to database", album.title);
+                Ok(album)
+            }
+            Err(e) => {
+                error!("Failed to add album to database!, {e}");
+                Err(e)
+            }
+        }
+    }
+
     pub fn start(&mut self) {
-        if self.is_locked() {
+        if lock_manager::is_locked() {
             return;
         }
 
@@ -158,7 +208,7 @@ impl Scanner {
             return;
         }
 
-        self.lock();
+        lock_manager::lock();
 
         _ = self.record_scan_start();
 
@@ -174,14 +224,14 @@ impl Scanner {
             let id = sha256::digest(file_path.file_name().unwrap().to_str().unwrap());
             let metadata = extract_metadata(file_path.to_path_buf());
 
-            if track_exists(&mut self.conn, &id) {
+            if self.track_exists(&id) {
                 self.update_track(id, file_path, metadata);
             } else {
                 self.add_track(id, file_path, metadata);
             }
         }
 
-        self.unlock();
+        lock_manager::unlock();
 
         match self.record_scan_end() {
             Ok(_) => {
@@ -203,23 +253,11 @@ impl Scanner {
         if let Some(artist) = metadata.artist {
             let artist_name_hash = sha256::digest(&artist);
 
-            if !artist_exists(&mut self.conn, &artist_name_hash) {
-                let new_artist = NewArtist {
-                    id: artist_name_hash.clone(),
-                    name: artist.to_string(),
-                };
-
-                match diesel::insert_into(artists::table)
-                    .values(new_artist)
-                    .execute(&mut self.conn)
-                {
-                    Ok(_) => {
-                        info!("Added new artist '{}' to database", &artist);
-                    }
-                    Err(e) => {
-                        error!("Failed to add artist to database!, {e}");
-                    }
-                };
+            if !self.artist_exists(&artist_name_hash)
+                && self
+                    .new_artist(artist_name_hash.clone(), artist.clone())
+                    .is_ok()
+            {
                 self.counter.artists += 1;
             }
 
@@ -235,37 +273,22 @@ impl Scanner {
             }
 
             if let Some(album) = metadata.album {
-                if !album_exists(&mut self.conn, &album.to_string(), &artist_name_hash) {
-                    let new_album = NewAlbum {
-                        id: nanoid!(),
-                        title: album.to_string(),
-                        artist_id: artist_name_hash.clone(),
-                    };
-
-                    match diesel::insert_into(albums::table)
-                        .values(&new_album)
-                        .execute(&mut self.conn)
+                if !self.album_exists(&album.to_string(), &artist_name_hash) {
+                    if let Ok(new_album) =
+                        self.new_album(nanoid!(), album.to_string(), artist_name_hash.clone())
                     {
-                        Ok(_) => {
-                            info!("Added new album '{}' to database", new_album.title);
-                        }
-                        Err(e) => {
-                            error!("Failed to add album to database!, {e}");
-                        }
-                    }
-
-                    match track.album_id {
-                        Some(album_id) => {
-                            if album_id != new_album.id {
+                        match track.album_id {
+                            Some(track_album_id) => {
+                                if track_album_id != new_album.id {
+                                    update_track.album_id = Some(new_album.id);
+                                }
+                            }
+                            None => {
                                 update_track.album_id = Some(new_album.id);
                             }
                         }
-                        None => {
-                            update_track.album_id = Some(new_album.id);
-                        }
+                        self.counter.albums += 1;
                     }
-
-                    self.counter.albums += 1;
                 }
             }
         }
@@ -277,39 +300,15 @@ impl Scanner {
                 for featured_artist in metadata.features {
                     let artist_name_hash = sha256::digest(&featured_artist);
 
-                    if !artist_exists(&mut self.conn, &artist_name_hash) {
-                        let new_artist = NewArtist {
-                            id: artist_name_hash.clone(),
-                            name: featured_artist.to_string(),
-                        };
-
-                        match diesel::insert_into(artists::table)
-                            .values(new_artist)
-                            .execute(&mut self.conn)
-                        {
-                            Ok(_) => {
-                                info!("Added new artist '{}' to database", featured_artist);
-                            }
-                            Err(e) => {
-                                error!("Failed to add artist to database!, {e}");
-                            }
-                        };
-
+                    if !self.artist_exists(&artist_name_hash)
+                        && self
+                            .new_artist(artist_name_hash.clone(), featured_artist)
+                            .is_ok()
+                    {
                         self.counter.artists += 1;
                     }
 
-                    let new_feature = NewFeature {
-                        id: nanoid!(),
-                        artist_id: artist_name_hash,
-                        track_id: id.clone(),
-                    };
-
-                    if let Err(e) = diesel::insert_into(features::table)
-                        .values(&new_feature)
-                        .execute(&mut self.conn)
-                    {
-                        error!("Failed to add featured artist to database!, {e}");
-                    }
+                    _ = self.new_feature(artist_name_hash.clone(), id.clone());
                 }
             }
             Err(e) => {
@@ -368,8 +367,6 @@ impl Scanner {
     }
 
     fn add_track(&mut self, id: String, file_path: &Path, metadata: Metadata) {
-        let mut features_insert_queue: Vec<NewFeature> = Vec::new();
-
         let mut new_track = NewTrack {
             id,
             title: metadata.title,
@@ -384,93 +381,26 @@ impl Scanner {
         if let Some(artist) = metadata.artist {
             let artist_name_hash = sha256::digest(&artist);
 
-            if !artist_exists(&mut self.conn, &artist_name_hash) {
-                let new_artist = NewArtist {
-                    id: artist_name_hash.clone(),
-                    name: artist.to_string(),
-                };
-
-                match diesel::insert_into(artists::table)
-                    .values(new_artist)
-                    .execute(&mut self.conn)
-                {
-                    Ok(_) => {
-                        info!("Added new artist '{}' to database", &artist);
-                        self.counter.artists += 1;
-                    }
-                    Err(e) => {
-                        error!("Failed to add artist to database!, {e}");
-                    }
-                };
+            if !self.artist_exists(&artist_name_hash)
+                && self
+                    .new_artist(artist_name_hash.clone(), artist.clone())
+                    .is_ok()
+            {
+                self.counter.artists += 1;
             }
 
             if let Some(album) = metadata.album {
-                if !album_exists(&mut self.conn, &album.to_string(), &artist_name_hash) {
-                    let new_album = NewAlbum {
-                        id: nanoid!(),
-                        title: album.to_string(),
-                        artist_id: artist_name_hash.clone(),
-                    };
-
-                    match diesel::insert_into(albums::table)
-                        .values(&new_album)
-                        .execute(&mut self.conn)
+                if !self.album_exists(&album.to_string(), &artist_name_hash) {
+                    if let Ok(new_album) =
+                        self.new_album(nanoid!(), album.to_string(), artist_name_hash.clone())
                     {
-                        Ok(_) => {
-                            info!("Added new album '{}' to database", new_album.title);
-                            self.counter.albums += 1;
-                        }
-                        Err(e) => {
-                            error!("Failed to add album to database!, {e}");
-                        }
+                        new_track.album_id = Some(new_album.id);
+                        self.counter.albums += 1;
                     }
-
-                    new_track.album_id = Some(new_album.id);
                 }
             }
 
             new_track.artist_id = Some(artist_name_hash);
-        }
-
-        self.counter.tracks += 1;
-
-        for feature_artist in metadata.features.into_iter() {
-            let feature_artist_name_hash = sha256::digest(&feature_artist);
-
-            // Create artist if does not exists
-            if !artist_exists(&mut self.conn, &feature_artist_name_hash) {
-                let new_artist = NewArtist {
-                    id: feature_artist_name_hash.clone(),
-                    name: feature_artist.to_string(),
-                };
-
-                match diesel::insert_into(artists::table)
-                    .values(new_artist)
-                    .execute(&mut self.conn)
-                {
-                    Ok(_) => {
-                        info!("Added new artist '{}' to database", &feature_artist);
-                        self.counter.artists += 1;
-                    }
-                    Err(e) => {
-                        error!("Failed to add artist to database!, {e}");
-                    }
-                };
-            }
-
-            if !feature_exists(
-                &mut self.conn,
-                feature_artist.to_string(),
-                new_track.id.clone(),
-            ) {
-                let new_feature = NewFeature {
-                    id: nanoid!(),
-                    artist_id: feature_artist_name_hash.clone(),
-                    track_id: new_track.id.clone(),
-                };
-
-                features_insert_queue.push(new_feature);
-            }
         }
 
         match diesel::insert_into(tracks::table)
@@ -492,22 +422,23 @@ impl Scanner {
             }
         }
 
-        if !features_insert_queue.is_empty() {
-            match diesel::insert_into(features::table)
-                .values(&features_insert_queue)
-                .execute(&mut self.conn)
+        for feature_artist in metadata.features.into_iter() {
+            let feature_artist_name_hash = sha256::digest(&feature_artist);
+
+            // Create artist if does not exists
+            if !self.artist_exists(&feature_artist_name_hash)
+                && self
+                    .new_artist(feature_artist_name_hash.clone(), feature_artist.clone())
+                    .is_ok()
             {
-                Ok(_) => {
-                    info!(
-                        "Added new {} featured artists on '{}' to database",
-                        features_insert_queue.len(),
-                        new_track.title,
-                    );
-                }
-                Err(e) => {
-                    error!("Failed to add featured artist to database!, {e}");
-                }
+                self.counter.artists += 1;
+            }
+
+            if !self.feature_exists(&feature_artist, &new_track.id) {
+                _ = self.new_feature(feature_artist_name_hash.clone(), new_track.id.clone());
             }
         }
+
+        self.counter.tracks += 1;
     }
 }

@@ -1,5 +1,5 @@
 use crate::routes::prelude::*;
-use crate::scanner::Scanner;
+use crate::scanner::{lock_manager, Scanner};
 
 #[derive(Deserialize, Serialize)]
 pub struct Data {
@@ -12,7 +12,7 @@ pub async fn rt() -> Json<Response<Data>> {
 
     let mut scanner = Scanner::new(conn);
 
-    if scanner.is_locked() {
+    if lock_manager::is_locked() {
         return Json(Response::error(ResError {
             msg: "Scanner is already running".to_string(),
             detail: String::from(""),
