@@ -5,7 +5,6 @@ mod search_tracks;
 
 use crate::models::albums::AlbumWithTracks;
 use crate::models::artists::{Artist, ArtistWithTracks};
-use crate::models::features::Feature;
 use crate::models::tracks::TrackInRes;
 use crate::models::{albums::Album, tracks::Track};
 use crate::schema;

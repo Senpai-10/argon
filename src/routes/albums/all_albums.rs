@@ -1,5 +1,4 @@
 use crate::models::albums::AlbumWithTracks;
-use crate::models::features::Feature;
 use crate::models::tracks::TrackInRes;
 use crate::models::{albums::Album, artists::Artist, tracks::Track};
 use crate::routes::prelude::*;

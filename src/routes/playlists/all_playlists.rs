@@ -1,8 +1,6 @@
-use crate::models::albums::Album;
-use crate::models::features::Feature;
 use crate::models::playlists::{Playlist, PlaylistInRes};
+use crate::models::tracks::Track;
 use crate::models::tracks::TrackInRes;
-use crate::models::{artists::Artist, tracks::Track};
 use crate::routes::prelude::*;
 
 #[derive(Deserialize, Serialize)]
