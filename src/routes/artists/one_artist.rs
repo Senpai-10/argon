@@ -54,6 +54,32 @@ pub fn rt(id: String) -> Json<Response<ArtistData>> {
     };
 
     Json(Response::data(ArtistData {
-        artist: ArtistWithTracks { artist, tracks },
+        artist: ArtistWithTracks {
+            tracks,
+            featured_on: features::table
+                .filter(features::artist_id.eq(&artist.id))
+                .inner_join(tracks::table)
+                .select(Track::as_select())
+                .load(&mut conn)
+                .unwrap()
+                .into_iter()
+                .map(|track| TrackInRes {
+                    artist: Some(artist.clone()),
+                    album: track.album_id.as_ref().map(|album_id| {
+                        albums::table
+                            .filter(albums::id.eq(album_id))
+                            .get_result::<Album>(&mut conn)
+                            .unwrap()
+                    }),
+                    features: Feature::belonging_to(&track)
+                        .inner_join(artists::table)
+                        .select(Artist::as_select())
+                        .load(&mut conn)
+                        .unwrap(),
+                    track,
+                })
+                .collect::<Vec<TrackInRes>>(),
+            artist,
+        },
     }))
 }

@@ -80,6 +80,29 @@ pub fn get_artists(
                     track: t,
                 })
                 .collect::<Vec<TrackInRes>>(),
+            featured_on: schema::features::table
+                .filter(schema::features::artist_id.eq(&artist.id))
+                .inner_join(schema::tracks::table)
+                .select(Track::as_select())
+                .load(conn)
+                .unwrap()
+                .into_iter()
+                .map(|track| TrackInRes {
+                    artist: Some(artist.clone()),
+                    album: track.album_id.as_ref().map(|album_id| {
+                        schema::albums::table
+                            .filter(schema::albums::id.eq(album_id))
+                            .get_result::<Album>(conn)
+                            .unwrap()
+                    }),
+                    features: Feature::belonging_to(&track)
+                        .inner_join(schema::artists::table)
+                        .select(Artist::as_select())
+                        .load(conn)
+                        .unwrap(),
+                    track,
+                })
+                .collect::<Vec<TrackInRes>>(),
         })
         .collect::<Vec<ArtistWithTracks>>()
 }

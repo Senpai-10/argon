@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct ArtistWithTracks {
     #[serde(flatten)]
     pub artist: Artist,
+    pub featured_on: Vec<TrackInRes>,
     pub tracks: Vec<TrackInRes>,
 }
 
