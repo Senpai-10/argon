@@ -4,7 +4,7 @@ use crate::routes::prelude::*;
 use diesel::dsl::{exists, select};
 
 #[delete("/playlists/<id>")]
-pub fn remove_playlist(auth: Authorization, id: String) -> Json<Response<PlaylistData>> {
+pub fn rt(auth: Authorization, id: String) -> Json<Response<PlaylistData>> {
     let mut conn = establish_connection();
 
     if !select(exists(

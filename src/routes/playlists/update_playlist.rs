@@ -13,7 +13,7 @@ pub struct UpdatePlaylistBody {
 }
 
 #[patch("/playlists/<id>", data = "<body>")]
-pub fn update_playlist(
+pub fn rt(
     auth: Authorization,
     id: String,
     body: Json<UpdatePlaylistBody>,

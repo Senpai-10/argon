@@ -12,7 +12,7 @@ pub struct Data {
 }
 
 #[get("/playlists/<id>")]
-pub fn one_playlist(auth: Authorization, id: String) -> Json<Response<Data>> {
+pub fn rt(auth: Authorization, id: String) -> Json<Response<Data>> {
     let mut conn = establish_connection();
 
     if !select(exists(playlists::table.filter(playlists::id.eq(&id))))

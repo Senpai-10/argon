@@ -7,11 +7,7 @@ use crate::routes::prelude::*;
 use diesel::dsl::{exists, select};
 
 #[delete("/playlists/<id>/<track_id>")]
-pub fn remove_playlist_track(
-    auth: Authorization,
-    id: String,
-    track_id: String,
-) -> Json<Response<TrackData>> {
+pub fn rt(auth: Authorization, id: String, track_id: String) -> Json<Response<TrackData>> {
     let mut conn = establish_connection();
 
     if !select(exists(playlists::table.filter(playlists::id.eq(&id))))

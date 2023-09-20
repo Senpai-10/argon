@@ -22,12 +22,12 @@ pub struct TrackData {
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![
-        all_playlists::all_playlists,
-        one_playlist::one_playlist,
-        new_playlist::new_playlist,
-        remove_playlist::remove_playlist,
-        new_playlist_track::new_playlist_track,
-        update_playlist::update_playlist,
-        remove_playlist_track::remove_playlist_track,
+        all_playlists::rt,
+        one_playlist::rt,
+        new_playlist::rt,
+        remove_playlist::rt,
+        new_playlist_track::rt,
+        update_playlist::rt,
+        remove_playlist_track::rt,
     ]
 }

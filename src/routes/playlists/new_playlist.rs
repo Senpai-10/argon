@@ -11,7 +11,7 @@ pub struct NewPlaylistBody {
 }
 
 #[post("/playlists", data = "<playlist_form>")]
-pub fn new_playlist(
+pub fn rt(
     auth: Authorization,
     playlist_form: Json<NewPlaylistBody>,
 ) -> Json<Response<PlaylistData>> {

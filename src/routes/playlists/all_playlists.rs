@@ -14,11 +14,7 @@ pub struct Data {
 }
 
 #[get("/playlists?<offset>&<limit>")]
-pub fn all_playlists(
-    auth: Authorization,
-    offset: Option<i64>,
-    limit: Option<i64>,
-) -> Json<Response<Data>> {
+pub fn rt(auth: Authorization, offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
     let mut conn = establish_connection();
     let mut query = playlists::table.into_boxed();
 
