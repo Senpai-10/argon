@@ -1,5 +1,5 @@
 use crate::db;
-use crate::models::sessions::Session;
+use crate::models::tokens::Token;
 use crate::models::users::User;
 use crate::schema;
 use chrono::Utc;
@@ -11,7 +11,7 @@ use rocket::request::{FromRequest, Outcome, Request};
 #[derive(Debug)]
 pub struct Authorization<'r> {
     pub user: User,
-    pub session_id: &'r str,
+    pub token: &'r str,
 }
 
 #[derive(Debug)]
@@ -25,48 +25,48 @@ impl<'r> FromRequest<'r> for Authorization<'r> {
     type Error = AuthorizationError;
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        /// Returns true if `key` is a valid API key string.
-        fn is_valid(session_id: &str) -> bool {
-            let mut conn = db::establish_connection();
-            validate_session(&mut conn, session_id)
-        }
-
         match req.headers().get_one("Authorization") {
             None => Outcome::Failure((Status::BadRequest, AuthorizationError::Missing)),
-            Some(key) if is_valid(key) => {
+            Some(key) => {
+                if !key.contains("Bearer ") {
+                    return Outcome::Failure((Status::BadRequest, AuthorizationError::Invalid));
+                }
+
+                let token: &str = key.split_whitespace().collect::<Vec<_>>()[1];
+
                 let mut conn = db::establish_connection();
 
-                let user: User = schema::sessions::table
-                    .filter(schema::sessions::id.eq(&key))
+                if !validate_token(&mut conn, token) {
+                    return Outcome::Failure((Status::BadRequest, AuthorizationError::Invalid));
+                }
+
+                let user: User = schema::tokens::table
+                    .filter(schema::tokens::id.eq(&token))
                     .inner_join(schema::users::table)
                     .select(User::as_select())
                     .get_result::<User>(&mut conn)
                     .unwrap();
 
-                Outcome::Success(Authorization {
-                    user,
-                    session_id: key,
-                })
+                Outcome::Success(Authorization { user, token })
             }
-            Some(_) => Outcome::Failure((Status::BadRequest, AuthorizationError::Invalid)),
         }
     }
 }
 
-pub fn validate_session(conn: &mut PgConnection, session_id: &str) -> bool {
-    let q: Result<Session, _> = schema::sessions::table
-        .filter(schema::sessions::id.eq(session_id))
-        .get_result::<Session>(conn);
+pub fn validate_token(conn: &mut PgConnection, token_id: &str) -> bool {
+    let q: Result<Token, _> = schema::tokens::table
+        .filter(schema::tokens::id.eq(token_id))
+        .get_result::<Token>(conn);
 
-    if let Ok(session) = q {
-        // Check if the session expired
+    if let Ok(token) = q {
+        // Check if the token has expired
         let now = Utc::now().naive_local();
 
-        if now > session.expires_at {
+        if now > token.expires_at {
             return false;
             // return Err(Json(ResError {
-            //     msg: "Failed to validate session".to_string(),
-            //     detail: "Session expired!".into(),
+            //     msg: "Failed to validate token".to_string(),
+            //     detail: "Token expired!".into(),
             // }));
         }
 
@@ -74,8 +74,8 @@ pub fn validate_session(conn: &mut PgConnection, session_id: &str) -> bool {
     };
 
     // Err(Json(ResError {
-    //     msg: "Failed to validate session".to_string(),
-    //     detail: "Invaild session id".into(),
+    //     msg: "Failed to validate token".to_string(),
+    //     detail: "Invaild token id".into(),
     // }))
 
     false

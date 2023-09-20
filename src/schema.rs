@@ -72,7 +72,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    sessions (id) {
+    tokens (id) {
         id -> Text,
         user_id -> Text,
         created_at -> Timestamp,
@@ -115,7 +115,7 @@ diesel::joinable!(features -> tracks (track_id));
 diesel::joinable!(playlists -> users (user_id));
 diesel::joinable!(playlists_tracks -> playlists (playlist_id));
 diesel::joinable!(playlists_tracks -> tracks (track_id));
-diesel::joinable!(sessions -> users (user_id));
+diesel::joinable!(tokens -> users (user_id));
 diesel::joinable!(tracks -> albums (album_id));
 diesel::joinable!(tracks -> artists (artist_id));
 
@@ -127,7 +127,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     playlists,
     playlists_tracks,
     scan_info,
-    sessions,
+    tokens,
     tracks,
     users,
 );

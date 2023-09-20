@@ -1,4 +1,4 @@
-use super::{create_session, Data, UserCreds};
+use super::{create_token, Data, UserCreds};
 use crate::models::users::User;
 use crate::routes::prelude::*;
 use diesel::dsl::{exists, select};
@@ -32,9 +32,9 @@ pub fn rt(user_creds: Form<UserCreds>) -> Json<Response<Data>> {
             }));
         }
 
-        let session_id = create_session(&mut conn, user.id);
+        let token_id = create_token(&mut conn, user.id);
 
-        return Json(Response::data(Data { session_id }));
+        return Json(Response::data(Data { token: token_id }));
     }
 
     Json(Response::error(ResError {

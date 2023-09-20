@@ -5,6 +5,6 @@ pub mod features;
 pub mod playlists;
 pub mod playlists_tracks;
 pub mod scan_info;
-pub mod sessions;
+pub mod tokens;
 pub mod tracks;
 pub mod users;

@@ -59,7 +59,7 @@ CREATE TABLE users (
     updated_at              TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE sessions (
+CREATE TABLE tokens (
     id                      TEXT PRIMARY KEY,
     user_id                 TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
