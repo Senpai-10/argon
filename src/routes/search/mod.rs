@@ -56,9 +56,8 @@ pub fn get_artists(
         .load(conn)
         .unwrap();
 
-    let tracks: Vec<(Track, Option<Album>)> = Track::belonging_to(&all_artists)
-        .left_join(schema::albums::table)
-        .load::<(Track, Option<Album>)>(conn)
+    let tracks: Vec<Track> = Track::belonging_to(&all_artists)
+        .load::<Track>(conn)
         .unwrap();
 
     tracks
@@ -69,16 +68,7 @@ pub fn get_artists(
             artist: artist.clone(),
             tracks: tracks
                 .into_iter()
-                .map(|(t, album)| TrackInRes {
-                    artist: Some(artist.clone()),
-                    album,
-                    features: Feature::belonging_to(&t)
-                        .inner_join(schema::artists::table)
-                        .select(Artist::as_select())
-                        .load(conn)
-                        .unwrap(),
-                    track: t,
-                })
+                .map(|t| t.to_response(conn))
                 .collect::<Vec<TrackInRes>>(),
             featured_on: schema::features::table
                 .filter(schema::features::artist_id.eq(&artist.id))
@@ -87,21 +77,7 @@ pub fn get_artists(
                 .load(conn)
                 .unwrap()
                 .into_iter()
-                .map(|track| TrackInRes {
-                    artist: Some(artist.clone()),
-                    album: track.album_id.as_ref().map(|album_id| {
-                        schema::albums::table
-                            .filter(schema::albums::id.eq(album_id))
-                            .get_result::<Album>(conn)
-                            .unwrap()
-                    }),
-                    features: Feature::belonging_to(&track)
-                        .inner_join(schema::artists::table)
-                        .select(Artist::as_select())
-                        .load(conn)
-                        .unwrap(),
-                    track,
-                })
+                .map(|track| track.to_response(conn))
                 .collect::<Vec<TrackInRes>>(),
         })
         .collect::<Vec<ArtistWithTracks>>()
@@ -115,8 +91,6 @@ pub fn get_tracks(
 ) -> Vec<TrackInRes> {
     let mut query = schema::tracks::table
         .filter(schema::tracks::title.ilike(&search_query))
-        .left_join(schema::artists::table)
-        .left_join(schema::albums::table)
         .into_boxed();
 
     if let Some(offset) = offset {
@@ -128,21 +102,10 @@ pub fn get_tracks(
     }
 
     query
-        .load::<(Track, Option<Artist>, Option<Album>)>(conn)
+        .load::<Track>(conn)
         .unwrap()
         .into_iter()
-        .map(
-            |(track, artist, album): (Track, Option<Artist>, Option<Album>)| TrackInRes {
-                artist,
-                album,
-                features: Feature::belonging_to(&track)
-                    .inner_join(schema::artists::table)
-                    .select(Artist::as_select())
-                    .load(conn)
-                    .unwrap(),
-                track,
-            },
-        )
+        .map(|track: Track| track.to_response(conn))
         .collect::<Vec<TrackInRes>>()
 }
 
@@ -185,21 +148,7 @@ pub fn get_albums(
             album: album.clone(),
             tracks: albums_tracks
                 .into_iter()
-                .map(|t| TrackInRes {
-                    artist: Some(
-                        schema::artists::table
-                            .filter(schema::artists::id.eq(&album.artist_id))
-                            .get_result::<Artist>(conn)
-                            .unwrap(),
-                    ),
-                    album: Some(album.clone()),
-                    features: Feature::belonging_to(&t)
-                        .inner_join(schema::artists::table)
-                        .select(Artist::as_select())
-                        .load(conn)
-                        .unwrap(),
-                    track: t,
-                })
+                .map(|t| t.to_response(conn))
                 .collect::<Vec<TrackInRes>>(),
         })
         .collect::<Vec<AlbumWithTracks>>()

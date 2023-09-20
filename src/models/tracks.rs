@@ -1,5 +1,6 @@
 use crate::models::albums::Album;
 use crate::models::artists::Artist;
+use crate::models::features::Feature;
 use crate::schema;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
@@ -47,4 +48,29 @@ pub struct NewTrack {
     pub year: Option<i32>,
     pub track_number: Option<i32>,
     pub path: String,
+}
+
+impl Track {
+    pub fn to_response(self, conn: &mut PgConnection) -> TrackInRes {
+        TrackInRes {
+            artist: self.artist_id.as_ref().map(|artist_id| {
+                schema::artists::table
+                    .filter(schema::artists::id.eq(artist_id))
+                    .get_result::<Artist>(conn)
+                    .unwrap()
+            }),
+            features: Feature::belonging_to(&self)
+                .inner_join(schema::artists::table)
+                .select(Artist::as_select())
+                .load(conn)
+                .unwrap(),
+            album: self.album_id.as_ref().map(|album_id| {
+                schema::albums::table
+                    .filter(schema::albums::id.eq(album_id))
+                    .get_result::<Album>(conn)
+                    .unwrap()
+            }),
+            track: self,
+        }
+    }
 }

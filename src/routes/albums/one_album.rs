@@ -23,21 +23,7 @@ pub fn rt(id: String) -> Json<Response<AlbumData>> {
         .load(&mut conn)
         .unwrap()
         .into_iter()
-        .map(|t| TrackInRes {
-            artist: t.artist_id.as_ref().map(|artist_id| {
-                artists::table
-                    .filter(artists::id.eq(artist_id))
-                    .get_result(&mut conn)
-                    .unwrap()
-            }),
-            album: Some(album.clone()),
-            features: Feature::belonging_to(&t)
-                .inner_join(artists::table)
-                .select(Artist::as_select())
-                .load(&mut conn)
-                .unwrap(),
-            track: t,
-        })
+        .map(|t| t.to_response(&mut conn))
         .collect::<Vec<TrackInRes>>();
 
     Json(Response::data(AlbumData {

@@ -59,21 +59,7 @@ pub fn rt(offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
                 .load(&mut conn)
                 .unwrap()
                 .into_iter()
-                .map(|track| TrackInRes {
-                    artist: Some(artist.clone()),
-                    album: track.album_id.as_ref().map(|album_id| {
-                        albums::table
-                            .filter(albums::id.eq(album_id))
-                            .get_result::<Album>(&mut conn)
-                            .unwrap()
-                    }),
-                    features: Feature::belonging_to(&track)
-                        .inner_join(artists::table)
-                        .select(Artist::as_select())
-                        .load(&mut conn)
-                        .unwrap(),
-                    track,
-                })
+                .map(|track| track.to_response(&mut conn))
                 .collect::<Vec<TrackInRes>>(),
         })
         .collect::<Vec<ArtistWithTracks>>();

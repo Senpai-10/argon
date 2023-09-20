@@ -47,21 +47,7 @@ pub fn rt(artist: Option<String>, offset: Option<i64>, limit: Option<i64>) -> Js
                 .unwrap(),
             tracks: albums_tracks
                 .into_iter()
-                .map(|t| TrackInRes {
-                    artist: Some(
-                        artists::table
-                            .filter(artists::id.eq(&album.artist_id))
-                            .get_result::<Artist>(&mut conn)
-                            .unwrap(),
-                    ),
-                    features: Feature::belonging_to(&t)
-                        .inner_join(artists::table)
-                        .select(Artist::as_select())
-                        .load(&mut conn)
-                        .unwrap(),
-                    album: Some(album.clone()),
-                    track: t,
-                })
+                .map(|t| t.to_response(&mut conn))
                 .collect::<Vec<TrackInRes>>(),
             album,
         })
