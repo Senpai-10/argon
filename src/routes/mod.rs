@@ -14,7 +14,7 @@ pub enum Response<T> {
 }
 
 pub mod prelude {
-    pub use crate::auth::Authorization;
+    pub use crate::auth::{Authorization, AuthorizationError};
     pub use crate::db::establish_connection;
     pub use crate::routes::{ResError, Response};
     pub use crate::schema::*;

@@ -1,6 +1,7 @@
 use crate::db;
 use crate::models::tokens::Token;
 use crate::models::users::User;
+use crate::routes::ResError;
 use crate::schema;
 use chrono::Utc;
 use diesel::prelude::*;
@@ -18,6 +19,21 @@ pub struct Authorization<'r> {
 pub enum AuthorizationError {
     Missing,
     Invalid,
+}
+
+impl AuthorizationError {
+    pub fn res_error(&self) -> ResError {
+        match self {
+            Self::Missing => ResError {
+                msg: "".into(),
+                detail: "Missing authentication token".into(),
+            },
+            Self::Invalid => ResError {
+                msg: "".into(),
+                detail: "Invaild authentication token".into(),
+            },
+        }
+    }
 }
 
 #[rocket::async_trait]

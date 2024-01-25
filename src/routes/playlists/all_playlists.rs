@@ -2,6 +2,8 @@ use crate::models::playlists::{Playlist, PlaylistInRes};
 use crate::models::tracks::Track;
 use crate::models::tracks::TrackInRes;
 use crate::routes::prelude::*;
+use rocket::http::Status;
+use rocket::request::Outcome;
 
 #[derive(Deserialize, Serialize)]
 pub struct Data {
@@ -12,7 +14,17 @@ pub struct Data {
 }
 
 #[get("/playlists?<offset>&<limit>")]
-pub fn rt(auth: Authorization, offset: Option<i64>, limit: Option<i64>) -> Json<Response<Data>> {
+pub fn rt(
+    auth: Result<Authorization, AuthorizationError>,
+    offset: Option<i64>,
+    limit: Option<i64>,
+) -> Outcome<Data, ResError> {
+    if let Err(e) = auth {
+        return Outcome::Failure((Status::NonAuthoritativeInformation, e.res_error()));
+    }
+
+    let user = auth.unwrap().user;
+
     let mut conn = establish_connection();
     let mut query = playlists::table.into_boxed();
 
@@ -25,7 +37,7 @@ pub fn rt(auth: Authorization, offset: Option<i64>, limit: Option<i64>) -> Json<
     }
 
     let playlists: Vec<PlaylistInRes> = query
-        .filter(playlists::user_id.eq(&auth.user.id))
+        .filter(playlists::user_id.eq(&user.id))
         .order(playlists::created_at.desc())
         .load::<Playlist>(&mut conn)
         .unwrap()
@@ -49,10 +61,10 @@ pub fn rt(auth: Authorization, offset: Option<i64>, limit: Option<i64>) -> Json<
         .get_result::<i64>(&mut conn)
         .unwrap();
 
-    Json(Response::data(Data {
+    Outcome::Success(Data {
         playlists,
         offset,
         limit,
         total,
-    }))
+    })
 }
